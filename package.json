@@ -1,9 +1,9 @@
 {
-  "name": "apix",
+  "name": "@evolutius/apix",
   "version": "1.0.0",
   "description": "A fast and secure JSON RESTful API",
   "main": "lib/apix.js",
-  "types": "lib/index.d.ts",
+  "types": "lib/apix.d.ts",
   "scripts": {
     "build": "tsc",
     "lint": "eslint . --ext .ts",
