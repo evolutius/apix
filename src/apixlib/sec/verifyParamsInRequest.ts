@@ -1,4 +1,4 @@
-import {JsonDictionary} from './JsonDictionary';
+import {JsonDictionary} from '../common/JsonDictionary';
 
 /**
  * Verifies if the required parameters exist in the url query

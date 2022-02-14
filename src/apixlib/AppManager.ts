@@ -5,7 +5,7 @@ import {AppDataManager} from './AppDataManager';
 import {AppMethod, RequestHandler} from './AppMethod';
 import {ErrorResponseMessage} from './common/ErrorResponseMessage';
 import {makeErrorResponse} from './common/makeErrorResponse';
-import {verifyParamsInRequest} from './common/verifyParamsInRequest';
+import {verifyParamsInRequest} from './sec/verifyParamsInRequest';
 import {ApiUrlRequestQuery} from './Constants';
 import {appSessionVerify} from './sec/appSessionVerify';
 import {appVerify} from './sec/appVerify';
