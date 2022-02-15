@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 
-export enum ErrorResponseMessage {
+export enum ApiXErrorResponseMessage {
   unauthorizedApp = 'This application is not authorized to use this service.',
   unauthorizedRequest = 'This request is not authorized.',
   invalidRequest = 'This request is not valid.',

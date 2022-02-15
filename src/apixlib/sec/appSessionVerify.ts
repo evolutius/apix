@@ -1,6 +1,6 @@
 import {createHash} from 'crypto';
 import {Request} from 'express';
-import {AppDataManager} from '../AppDataManager';
+import {ApiXDataManager} from '../ApiXDataManager';
 
 /**
  * Verifies that the app making the request is a valid app
@@ -8,12 +8,12 @@ import {AppDataManager} from '../AppDataManager';
  * @param {string} appSessionId Unique app session ID of the request
  * @param {Request} req Request object
  * @param {number} maxDateDifference Maximum date difference in ms
- * @param {AppDataManager} appDataManager data manager
+ * @param {ApiXDataManager} appDataManager data manager
  * @return {boolean} true if the session ID is valid
  */
 export function appSessionVerify(
     apiKey: string, appSessionId: string, req: Request,
-    maxDateDifference: number, appDataManager: AppDataManager): boolean {
+    maxDateDifference: number, appDataManager: ApiXDataManager): boolean {
   // Verify Request Date is Valid
   const dateString = req.headers.date;
 

@@ -1,38 +1,38 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import {AppConfig} from './AppConfig';
-import {AppDataManager} from './AppDataManager';
-import {AppMethod, RequestHandler} from './AppMethod';
-import {ErrorResponseMessage} from './common/ErrorResponseMessage';
-import {makeErrorResponse} from './common/makeErrorResponse';
+import {ApiXConfig} from './ApiXConfig';
+import {ApiXDataManager} from './ApiXDataManager';
+import {ApiXAppMethod, ApiXRequestHandler} from './ApiXMethod';
+import {ApiXErrorResponseMessage as ApiXErrorResponseMessage} from './common/ApiXErrorResponseMessage';
+import {makeApiXErrorResponse} from './common/makeApiXErrorResponse';
 import {verifyParamsInRequest} from './sec/verifyParamsInRequest';
-import {ApiUrlRequestQuery} from './Constants';
+import {ApiXUrlRequestQuery as ApiXUrlRequestQuery} from './ApiXConstants';
 import {appSessionVerify} from './sec/appSessionVerify';
 import {appVerify} from './sec/appVerify';
 import {appVerifyClearanceLevel} from './sec/appVerifyClearanceLevel';
-import {ClearanceLevelDeterminator} from './sec/ClearanceLevel';
+import {ApiXClearanceLevelDeterminator} from './sec/ApiXClearanceLevel';
 
 /**
  * Main class of the API
  * Request body and method response is always assumed to be JSON
  */
-export class AppManager {
+export class ApiXManager {
   private static PORT = 3000;
   private app;
-  private appConfig: AppConfig;
-  private clearanceLevelDeterminator: ClearanceLevelDeterminator;
-  private appDataManager: AppDataManager;
+  private appConfig: ApiXConfig;
+  private clearanceLevelDeterminator: ApiXClearanceLevelDeterminator;
+  private appDataManager: ApiXDataManager;
 
   /**
    * Constructor
-   * @param {ClearanceLevelDeterminator} clDeterminator
-   * @param {AppDataManager} dataManager
+   * @param {ApiXClearanceLevelDeterminator} clDeterminator
+   * @param {ApiXDataManager} dataManager
    */
   public constructor(
-      clDeterminator: ClearanceLevelDeterminator, dataManager: AppDataManager) {
+      clDeterminator: ApiXClearanceLevelDeterminator, dataManager: ApiXDataManager) {
     this.app = express();
     this.app.use(bodyParser.json());
-    this.appConfig = new AppConfig();
+    this.appConfig = new ApiXConfig();
     this.clearanceLevelDeterminator = clDeterminator;
     this.appDataManager = dataManager;
   }
@@ -41,7 +41,7 @@ export class AppManager {
    * Starts API Service
    */
   public run() {
-    let port = AppManager.PORT;
+    let port = ApiXManager.PORT;
 
     if (this.appConfig.valueForKey('port')) {
       port = this.appConfig.valueForKey('port') as number;
@@ -54,26 +54,26 @@ export class AppManager {
 
   /**
    * Registers an app method
-   * @param {AppMethod} appMethod App method to register
+   * @param {ApiXAppMethod} appMethod App method to register
    */
-  public registerAppMethod(appMethod: AppMethod) {
-    const methodWrappedHandler: RequestHandler = (req, res) => {
+  public registerAppMethod(appMethod: ApiXAppMethod) {
+    const methodWrappedHandler: ApiXRequestHandler = (req, res) => {
       // Get and verify all implicitly required queries
       const requiredParams = [
-        ApiUrlRequestQuery.apiKey,
-        ApiUrlRequestQuery.appSessionId,
+        ApiXUrlRequestQuery.apiKey,
+        ApiXUrlRequestQuery.appSessionId,
       ];
 
       if (!verifyParamsInRequest(requiredParams, req.query)) {
-        res.send(makeErrorResponse(ErrorResponseMessage.missingRequiredParams));
+        res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.missingRequiredParams));
         return;
       }
 
-      const apiKey = req.query[ApiUrlRequestQuery.apiKey] as string;
-      const appSessionId = req.query[ApiUrlRequestQuery.appSessionId] as string;
+      const apiKey = req.query[ApiXUrlRequestQuery.apiKey] as string;
+      const appSessionId = req.query[ApiXUrlRequestQuery.appSessionId] as string;
 
       if (!appVerify(apiKey || '', this.appDataManager)) {
-        res.send(makeErrorResponse(ErrorResponseMessage.unauthorizedApp));
+        res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.unauthorizedApp));
         return;
       }
 
@@ -81,7 +81,7 @@ export class AppManager {
           apiKey || '', appSessionId || '', req,
               this.appConfig.valueForKey('max_req_date_diff') as number,
               this.appDataManager)) {
-        res.send(makeErrorResponse(ErrorResponseMessage.invalidRequest));
+        res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.invalidRequest));
         return;
       }
 
@@ -89,14 +89,14 @@ export class AppManager {
           this.clearanceLevelDeterminator.determine(appMethod, req);
 
       if (!appVerifyClearanceLevel(appMethod.requiredCl, clearanceLevel)) {
-        res.send(makeErrorResponse(ErrorResponseMessage.unauthorizedRequest));
+        res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.unauthorizedRequest));
         return;
       }
 
       // Verify Method Required Parameters
       if (!verifyParamsInRequest(appMethod.requiredParams, req.query)) {
-        res.send(makeErrorResponse(
-            ErrorResponseMessage.missingRequiredMethodParams));
+        res.send(makeApiXErrorResponse(
+            ApiXErrorResponseMessage.missingRequiredMethodParams));
         return;
       }
 
@@ -108,11 +108,11 @@ export class AppManager {
 
   /**
    * Registers a wrapper request handler for an app method
-   * @param {RequestHandler} requestHandler
-   * @param {AppMethod} appMethod
+   * @param {ApiXRequestHandler} requestHandler
+   * @param {ApiXAppMethod} appMethod
    */
   private registerHandlerForAppMethod(
-      requestHandler: RequestHandler, appMethod: AppMethod) {
+      requestHandler: ApiXRequestHandler, appMethod: ApiXAppMethod) {
     let endpoint: string;
 
     if (appMethod.entity) {

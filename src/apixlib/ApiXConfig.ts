@@ -1,11 +1,11 @@
 
-export type ConfigDictionary = {[key: string]: unknown};
+export type ApiXConfigDictionary = {[key: string]: unknown};
 
 /**
  * App Configuration Data
  */
-export class AppConfig {
-  private config: ConfigDictionary;
+export class ApiXConfig {
+  private config: ApiXConfigDictionary;
 
   /**
    * Constructor

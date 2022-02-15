@@ -1,12 +1,12 @@
-import {AppDataManager} from '../AppDataManager';
+import {ApiXDataManager} from '../ApiXDataManager';
 
 /**
  * Verifies that the app making the request is a valid app
  * @param {string} apiKey Api Key of the request
- * @param {AppDataManager} appDataManager data manager
+ * @param {ApiXDataManager} appDataManager data manager
  * @return {boolean} true if API Key is valid
  */
 export function appVerify(
-    apiKey: string, appDataManager: AppDataManager): boolean {
+    apiKey: string, appDataManager: ApiXDataManager): boolean {
   return appDataManager.getAppKeyForApiKey(apiKey) != null;
 }
