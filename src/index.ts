@@ -1,7 +1,7 @@
 import {ApiXConfig as ApiXConfigInternal} from "./apixlib/ApiXConfig";
 import {ApiXDataManager as ApiXDataManagerInternal} from "./apixlib/ApiXDataManager";
-import {ApiXManager as ApiXManagerInternal} from "./apixlib/AppManager";
-import {ApiXAppMethod as ApiXAppMethodInternal} from "./apixlib/ApiXMethod";
+import {ApiXManager as ApiXManagerInternal} from "./apixlib/ApiXManager";
+import {ApiXMethod as ApiXAppMethodInternal} from "./apixlib/ApiXMethod";
 import {ApiXErrorResponseMessage as ApiXErrorResponseMessageInternal} from "./apixlib/common/ApiXErrorResponseMessage";
 import {makeApiXErrorResponse as makeApiXErrorResponseInternal} from "./apixlib/common/makeApiXErrorResponse";
 import {ApiXUrlRequestQuery as ApiXUrlRequestQueryInternal} from "./apixlib/ApiXConstants";

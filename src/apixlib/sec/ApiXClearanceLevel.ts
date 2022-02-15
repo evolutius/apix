@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import {ApiXAppMethod} from '../ApiXMethod';
+import {ApiXMethod} from '../ApiXMethod';
 import {Request} from 'express';
 
 export enum ApiXClearanceLevel {
@@ -13,5 +13,5 @@ export enum ApiXClearanceLevel {
 }
 
 export interface ApiXClearanceLevelDeterminator {
-  determine(appMethod: ApiXAppMethod, req: Request): ApiXClearanceLevel;
+  determine(appMethod: ApiXMethod, req: Request): ApiXClearanceLevel;
 }

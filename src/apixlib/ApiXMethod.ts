@@ -3,11 +3,11 @@ import {ApiXClearanceLevel} from './sec/ApiXClearanceLevel';
 
 export type ApiXRequestHandler = (req: Request, res: Response) => unknown;
 
-export interface ApiXAppMethod {
-  entity: string;
+export interface ApiXMethod {
+  entity?: string;
   method: string;
-  requiredCl: ApiXClearanceLevel;
-  httpMethod: string;
-  requiredParams: string[];
   requestHandler: ApiXRequestHandler;
+  httpMethod?: string;
+  requiredParams?: string[];
+  requiredClearanceLevel?: ApiXClearanceLevel;
 }

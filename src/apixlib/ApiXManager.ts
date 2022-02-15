@@ -2,7 +2,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import {ApiXConfig} from './ApiXConfig';
 import {ApiXDataManager} from './ApiXDataManager';
-import {ApiXAppMethod, ApiXRequestHandler} from './ApiXMethod';
+import {ApiXMethod, ApiXRequestHandler} from './ApiXMethod';
 import {ApiXErrorResponseMessage as ApiXErrorResponseMessage} from './common/ApiXErrorResponseMessage';
 import {makeApiXErrorResponse} from './common/makeApiXErrorResponse';
 import {verifyParamsInRequest} from './sec/verifyParamsInRequest';
@@ -10,14 +10,13 @@ import {ApiXUrlRequestQuery as ApiXUrlRequestQuery} from './ApiXConstants';
 import {appSessionVerify} from './sec/appSessionVerify';
 import {appVerify} from './sec/appVerify';
 import {appVerifyClearanceLevel} from './sec/appVerifyClearanceLevel';
-import {ApiXClearanceLevelDeterminator} from './sec/ApiXClearanceLevel';
+import {ApiXClearanceLevel, ApiXClearanceLevelDeterminator} from './sec/ApiXClearanceLevel';
 
 /**
  * Main class of the API
  * Request body and method response is always assumed to be JSON
  */
 export class ApiXManager {
-  private static PORT = 3000;
   private app;
   private appConfig: ApiXConfig;
   private clearanceLevelDeterminator: ApiXClearanceLevelDeterminator;
@@ -29,10 +28,10 @@ export class ApiXManager {
    * @param {ApiXDataManager} dataManager
    */
   public constructor(
-      clDeterminator: ApiXClearanceLevelDeterminator, dataManager: ApiXDataManager) {
+      clDeterminator: ApiXClearanceLevelDeterminator, dataManager: ApiXDataManager, appConfig: ApiXConfig) {
     this.app = express();
     this.app.use(bodyParser.json());
-    this.appConfig = new ApiXConfig();
+    this.appConfig = appConfig;
     this.clearanceLevelDeterminator = clDeterminator;
     this.appDataManager = dataManager;
   }
@@ -41,7 +40,7 @@ export class ApiXManager {
    * Starts API Service
    */
   public run() {
-    let port = ApiXManager.PORT;
+    let port = 3000;
 
     if (this.appConfig.valueForKey('port')) {
       port = this.appConfig.valueForKey('port') as number;
@@ -54,9 +53,9 @@ export class ApiXManager {
 
   /**
    * Registers an app method
-   * @param {ApiXAppMethod} appMethod App method to register
+   * @param {ApiXMethod} appMethod App method to register
    */
-  public registerAppMethod(appMethod: ApiXAppMethod) {
+  public registerAppMethod(appMethod: ApiXMethod) {
     const methodWrappedHandler: ApiXRequestHandler = (req, res) => {
       // Get and verify all implicitly required queries
       const requiredParams = [
@@ -88,13 +87,13 @@ export class ApiXManager {
       const clearanceLevel =
           this.clearanceLevelDeterminator.determine(appMethod, req);
 
-      if (!appVerifyClearanceLevel(appMethod.requiredCl, clearanceLevel)) {
+      if (!appVerifyClearanceLevel(appMethod.requiredClearanceLevel || ApiXClearanceLevel.CL6, clearanceLevel)) {
         res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.unauthorizedRequest));
         return;
       }
 
       // Verify Method Required Parameters
-      if (!verifyParamsInRequest(appMethod.requiredParams, req.query)) {
+      if (!verifyParamsInRequest(appMethod.requiredParams || [], req.query)) {
         res.send(makeApiXErrorResponse(
             ApiXErrorResponseMessage.missingRequiredMethodParams));
         return;
@@ -109,10 +108,10 @@ export class ApiXManager {
   /**
    * Registers a wrapper request handler for an app method
    * @param {ApiXRequestHandler} requestHandler
-   * @param {ApiXAppMethod} appMethod
+   * @param {ApiXMethod} appMethod
    */
   private registerHandlerForAppMethod(
-      requestHandler: ApiXRequestHandler, appMethod: ApiXAppMethod) {
+      requestHandler: ApiXRequestHandler, appMethod: ApiXMethod) {
     let endpoint: string;
 
     if (appMethod.entity) {
@@ -121,7 +120,7 @@ export class ApiXManager {
       endpoint = `/${appMethod.method}`;
     }
 
-    const httpMethod = appMethod.httpMethod;
+    const httpMethod = appMethod.httpMethod || 'GET';
 
     if (httpMethod == 'GET') {
       this.app.get(endpoint, requestHandler);
