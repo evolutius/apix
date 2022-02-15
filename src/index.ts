@@ -5,13 +5,15 @@ import {AppMethod} from "./apixlib/AppMethod";
 import {ErrorResponseMessage} from "./apixlib/common/ErrorResponseMessage";
 import {makeErrorResponse} from "./apixlib/common/makeErrorResponse";
 import {ApiUrlRequestQuery} from "./apixlib/Constants";
-import {ClearanceLevel} from "./apixlib/sec/ClearanceLevel";
+import {ClearanceLevel, ClearanceLevelDeterminator} from "./apixlib/sec/ClearanceLevel";
 
 export const ApiXErrorResponseMessage = ErrorResponseMessage;
 export type ApiXErrorResponseMessage = ErrorResponseMessage;
 
 export const ApiXClearanceLevel = ClearanceLevel;
 export type ApiXClearanceLevel = ClearanceLevel;
+
+export type ApiXClearanceLevelDeterminator = ClearanceLevelDeterminator;
 
 export const ApiXConfig = AppConfig;
 export type ApiXConfig = AppConfig;
