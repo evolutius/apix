@@ -16,8 +16,12 @@ export class ApiXConfig {
       const data = fs.readFileSync(configFile, 'utf-8');
       this.config = JSON.parse(data);
 
-      if (this.valueForKey('max_req_date_diff') === undefined) {
-        this.setValueForKey(5000, 'max_req_date_diff');
+      if (this.valueForKey('maxRequestDateDifference') === undefined) {
+        this.setValueForKey(5000, 'maxRequestDateDifference');
+      }
+
+      if (this.valueForKey('appSessionOnce') === undefined) {
+        this.setValueForKey(true, 'appSessionOnce');
       }
 
       if (this.valueForKey('port') === undefined) {
@@ -25,7 +29,8 @@ export class ApiXConfig {
       }
     } catch {
       this.config = {
-        'max_req_date_diff': 5000,
+        'appSessionOnce': true,
+        'maxRequestDateDifference': 5000,
         'port': 3000
       };
     }
@@ -45,7 +50,7 @@ export class ApiXConfig {
    * @param {unknown} value the value to set @key
    * @param {string} key key in config
    */
-   public setValueForKey(value: unknown, key: string) {
+  public setValueForKey(value: unknown, key: string) {
     this.config[key] = value;
   }
 }
