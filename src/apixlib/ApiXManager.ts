@@ -178,6 +178,7 @@ export class ApiXManager {
     }
 
     // Verify Session
+    const salt = req.header('API-X-Salt') || '';
     const hash = createHash('sha256');
     const appKey = this.appDataManager.getAppKeyForApiKey(apiKey) || '';
     const httpBody = Object.keys(req.body).length > 0 ?
@@ -185,7 +186,7 @@ export class ApiXManager {
     const httpBodyBase64 = httpBody.length > 0 ?
           Buffer.from(httpBody, 'binary').toString('base64') : '';
     const calculatedSessionId =
-        hash.update(httpBodyBase64 + appKey + dateString, 'utf-8')
+        hash.update(httpBodyBase64 + appKey + dateString + salt, 'utf-8')
             .digest()
             .toString('hex');
     
