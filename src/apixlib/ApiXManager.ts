@@ -89,13 +89,13 @@ export class ApiXManager {
       const apiKey = req.query[ApiXUrlRequestQuery.apiKey] as string;
       const appSessionId = req.query[ApiXUrlRequestQuery.appSessionId] as string;
 
-      if (await !self.verifyApp(apiKey || '')) {
+      if (!(await self.verifyApp(apiKey || ''))) {
         res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.unauthorizedApp));
         return;
       }
 
-      if (await !self.verifySession(
-          apiKey || '', appSessionId || '', req)) {
+      if (!(await self.verifySession(
+          apiKey || '', appSessionId || '', req))) {
         res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.invalidRequest));
         return;
       }
