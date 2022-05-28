@@ -101,9 +101,9 @@ export class ApiXManager {
       }
 
       const clearanceLevel =
-          ApiXManager.isAsyncMethod(self.clearanceLevelDeterminator.determine)
+          (ApiXManager.isAsyncMethod(self.clearanceLevelDeterminator.determine)
           ? await self.clearanceLevelDeterminator.determine(appMethod, req)
-          : self.clearanceLevelDeterminator.determine(appMethod, req);
+          : self.clearanceLevelDeterminator.determine(appMethod, req)) as ApiXClearanceLevel;
 
       if (!self.verifyClearanceLevel(appMethod.requiredClearanceLevel || ApiXClearanceLevel.CL6, clearanceLevel)) {
         res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.unauthorizedRequest));
@@ -210,9 +210,9 @@ export class ApiXManager {
    */
   private async verifyApp(
     apiKey: string): Promise<boolean> {
-    const appKey = ApiXManager.isAsyncMethod(this.appDataManager.getAppKeyForApiKey)
+    const appKey = (ApiXManager.isAsyncMethod(this.appDataManager.getAppKeyForApiKey)
         ? await this.appDataManager.getAppKeyForApiKey(apiKey)
-        : this.appDataManager.getAppKeyForApiKey(apiKey);
+        : this.appDataManager.getAppKeyForApiKey(apiKey)) as string;
     return appKey != null && appKey.length > 0;
   }
 

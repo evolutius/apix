@@ -13,5 +13,5 @@ export enum ApiXClearanceLevel {
 }
 
 export interface ApiXClearanceLevelDeterminator {
-  determine(appMethod: ApiXMethod, req: Request): ApiXClearanceLevel;
+  determine(appMethod: ApiXMethod, req: Request): ApiXClearanceLevel | Promise<ApiXClearanceLevel>;
 }
