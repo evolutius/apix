@@ -18,14 +18,14 @@ describe('ApiXManager', () => {
     expect(verifyClearanceLevel(ApiXClearanceLevel.CL6, ApiXClearanceLevel.CL6)).toBe(true);
   });
 
-  test('Empty or undefined appKeys will result in incorrect verification', () => {
+  test('Empty or undefined appKeys will result in incorrect verification', async () => {
     const appManager: ApiXManager = mockApiXManager();
-    expect(appManager['verifyApp']('someApiKey')).toBe(false);
+    expect(await appManager['verifyApp']('someApiKey')).toBe(false);
   });
 
-  test('Non-empty appKeys will result in incorrect verification', () => {
+  test('Non-empty appKeys will result in incorrect verification', async () => {
     const appManager: ApiXManager = mockApiXManager(ApiXClearanceLevel.CL6, 'someAppKey');
-    expect(appManager['verifyApp']('someApiKey')).toBe(true);
+    expect(await appManager['verifyApp']('someApiKey')).toBe(true);
   });
 
   test('Required parameters are correctly verified', () => {
@@ -52,17 +52,17 @@ describe('ApiXManager', () => {
     expect(verifyParamsInRequest(reqParams, testParams2)).toBe(true);
   });
 
-  test('App session verification fails gracefully with invalid parameters', () => {
+  test('App session verification fails gracefully with invalid parameters', async () => {
     const request = mockRequest();
     const appManager: ApiXManager = mockApiXManager();
-    expect(appManager['verifySession']('', '', request)).toBe(false);
+    expect(await appManager['verifySession']('', '', request)).toBe(false);
   });
 
-  test('App session verification fails with invalid app session and valid request', () => {
+  test('App session verification fails with invalid app session and valid request', async () => {
     const request = mockRequest();
     const appManager: ApiXManager = mockApiXManager();
-    expect(appManager['verifySession']('someApiKey', 'someAppSessionId', request)).toBe(false);
-    expect(appManager['verifySession']('', '', request)).toBe(false);
+    expect(await appManager['verifySession']('someApiKey', 'someAppSessionId', request)).toBe(false);
+    expect(await appManager['verifySession']('', '', request)).toBe(false);
   });
 
   test('Test endpoint is built correctly from ApiXMethod', async () => {
@@ -216,27 +216,27 @@ describe('ApiXManager', () => {
     }
   });
 
-  test('App session verification fails no date header', () => {
+  test('App session verification fails no date header', async () => {
     const appKey = 'N2NkM2VjOGFkNDA5MDFlZjBmNDg5NDNjMjk3ZWNkNjg4ZWUzNmM1YmU2ODQ5ZGU2Y2E1MjNhNDY4ZjE5MzY4ZQ==';
     const validSessionId = '11460dc55c56ccd49ad9d2edcdc38559fef09dd0175eacaa9cfd35b1538ef003';
     const httpBody = {param1: 'value1', param2: 'value2'};
     const request = mockRequest(undefined, httpBody);
     request.headers.date = undefined;
     const appManager: ApiXManager = mockApiXManager(ApiXClearanceLevel.CL6, appKey, '', true);
-    expect(appManager['verifySession']('', validSessionId, request)).toBe(false);
+    expect(await appManager['verifySession']('', validSessionId, request)).toBe(false);
   });
 
-  test('App session verification fails with old date', () => {
+  test('App session verification fails with old date', async () => {
     const appKey = 'N2NkM2VjOGFkNDA5MDFlZjBmNDg5NDNjMjk3ZWNkNjg4ZWUzNmM1YmU2ODQ5ZGU2Y2E1MjNhNDY4ZjE5MzY4ZQ==';
     const dateString = 'Mon, 09 Mar 2020 08:13:24 GMT';
     const validSessionId = '11460dc55c56ccd49ad9d2edcdc38559fef09dd0175eacaa9cfd35b1538ef003';
     const httpBody = {param1: 'value1', param2: 'value2'};
     const request = mockRequest(dateString, httpBody);
     const appManager: ApiXManager = mockApiXManager(ApiXClearanceLevel.CL6, appKey, '', true);
-    expect(appManager['verifySession']('', validSessionId, request)).toBe(false);
+    expect(await appManager['verifySession']('', validSessionId, request)).toBe(false);
   });
 
-  test('App session verification succeeds with valid app session', () => {
+  test('App session verification succeeds with valid app session', async () => {
     const appKey = 'N2NkM2VjOGFkNDA5MDFlZjBmNDg5NDNjMjk3ZWNkNjg4ZWUzNmM1YmU2ODQ5ZGU2Y2E1MjNhNDY4ZjE5MzY4ZQ==';
     const dateString = 'Mon, 09 Mar 2020 08:13:24 GMT';
     const validSessionId = '11460dc55c56ccd49ad9d2edcdc38559fef09dd0175eacaa9cfd35b1538ef003';
@@ -245,10 +245,10 @@ describe('ApiXManager', () => {
     const appManager: ApiXManager = mockApiXManager(ApiXClearanceLevel.CL6, appKey);
     const mockDateNow = jest.fn().mockReturnValueOnce(new Date(dateString).getTime());
     Date.now = mockDateNow;
-    expect(appManager['verifySession']('', validSessionId, request)).toBe(true);
+    expect(await appManager['verifySession']('', validSessionId, request)).toBe(true);
   });
 
-  test('App session verification succeeds with successive valid app session w/o cache', () => {
+  test('App session verification succeeds with successive valid app session w/o cache', async () => {
     const appKey = 'N2NkM2VjOGFkNDA5MDFlZjBmNDg5NDNjMjk3ZWNkNjg4ZWUzNmM1YmU2ODQ5ZGU2Y2E1MjNhNDY4ZjE5MzY4ZQ==';
     const dateString = 'Mon, 09 Mar 2020 08:13:24 GMT';
     const validSessionId = '11460dc55c56ccd49ad9d2edcdc38559fef09dd0175eacaa9cfd35b1538ef003';
@@ -257,9 +257,9 @@ describe('ApiXManager', () => {
     const appManager: ApiXManager = mockApiXManager(ApiXClearanceLevel.CL6, appKey);
     const mockDateNow = jest.fn().mockReturnValueOnce(new Date(dateString).getTime());
     Date.now = mockDateNow;
-    expect(appManager['verifySession']('', validSessionId, request)).toBe(true);
-    expect(appManager['verifySession']('', validSessionId, request)).toBe(true);
-    expect(appManager['verifySession']('', validSessionId, request)).toBe(true);
+    expect(await appManager['verifySession']('', validSessionId, request)).toBe(true);
+    expect(await appManager['verifySession']('', validSessionId, request)).toBe(true);
+    expect(await appManager['verifySession']('', validSessionId, request)).toBe(true);
   });
 
   jest.setTimeout(30000);
@@ -274,12 +274,12 @@ describe('ApiXManager', () => {
     const evictionTime = appConfig.valueForKey('maxRequestDateDifference') as number;
     const mockDateNow = jest.fn().mockReturnValueOnce(new Date(dateString).getTime());
     Date.now = mockDateNow;
-    expect(appManager['verifySession']('', validSessionId, request)).toBe(true);
+    expect(await appManager['verifySession']('', validSessionId, request)).toBe(true);
     await new Promise((r) => setTimeout(r, evictionTime + 100));
-    expect(appManager['verifySession']('', validSessionId, request)).toBe(true);
+    expect(await appManager['verifySession']('', validSessionId, request)).toBe(true);
   });
 
-  test('App session verification fails with successive valid app session with cache', () => {
+  test('App session verification fails with successive valid app session with cache', async () => {
     const appKey = 'N2NkM2VjOGFkNDA5MDFlZjBmNDg5NDNjMjk3ZWNkNjg4ZWUzNmM1YmU2ODQ5ZGU2Y2E1MjNhNDY4ZjE5MzY4ZQ==';
     const dateString = 'Mon, 09 Mar 2020 08:13:24 GMT';
     const validSessionId = '11460dc55c56ccd49ad9d2edcdc38559fef09dd0175eacaa9cfd35b1538ef003';
@@ -288,8 +288,8 @@ describe('ApiXManager', () => {
     const appManager: ApiXManager = mockApiXManager(ApiXClearanceLevel.CL6, appKey, '', true);
     const mockDateNow = jest.fn().mockReturnValueOnce(new Date(dateString).getTime());
     Date.now = mockDateNow;
-    expect(appManager['verifySession']('', validSessionId, request)).toBe(true);
-    expect(appManager['verifySession']('', validSessionId, request)).toBe(false);
-    expect(appManager['verifySession']('', validSessionId, request)).toBe(false);
+    expect(await appManager['verifySession']('', validSessionId, request)).toBe(true);
+    expect(await appManager['verifySession']('', validSessionId, request)).toBe(false);
+    expect(await appManager['verifySession']('', validSessionId, request)).toBe(false);
   });
 });

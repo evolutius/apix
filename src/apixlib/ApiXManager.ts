@@ -74,7 +74,7 @@ export class ApiXManager {
 
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
-    const methodWrappedHandler: ApiXRequestHandler = (req, res) => {
+    const methodWrappedHandler: ApiXRequestHandler = async (req, res) => {
       // Get and verify all implicitly required queries
       const requiredParams = [
         ApiXUrlRequestQuery.apiKey,
@@ -89,19 +89,21 @@ export class ApiXManager {
       const apiKey = req.query[ApiXUrlRequestQuery.apiKey] as string;
       const appSessionId = req.query[ApiXUrlRequestQuery.appSessionId] as string;
 
-      if (!self.verifyApp(apiKey || '')) {
+      if (await !self.verifyApp(apiKey || '')) {
         res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.unauthorizedApp));
         return;
       }
 
-      if (!self.verifySession(
+      if (await !self.verifySession(
           apiKey || '', appSessionId || '', req)) {
         res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.invalidRequest));
         return;
       }
 
       const clearanceLevel =
-          self.clearanceLevelDeterminator.determine(appMethod, req);
+          ApiXManager.isAsyncMethod(self.clearanceLevelDeterminator.determine)
+          ? await self.clearanceLevelDeterminator.determine(appMethod, req)
+          : self.clearanceLevelDeterminator.determine(appMethod, req);
 
       if (!self.verifyClearanceLevel(appMethod.requiredClearanceLevel || ApiXClearanceLevel.CL6, clearanceLevel)) {
         res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.unauthorizedRequest));
@@ -115,7 +117,9 @@ export class ApiXManager {
         return;
       }
 
-      res.send(appMethod.requestHandler(req, res));
+      res.send(ApiXManager.isAsyncMethod(appMethod.requestHandler)
+          ? await appMethod.requestHandler(req, res)
+          : appMethod.requestHandler(req, res));
     };
 
     this.registerHandlerForAppMethod(methodWrappedHandler, appMethod, endpoint);
@@ -150,8 +154,8 @@ export class ApiXManager {
    * @param {Request} req Request object
    * @return {boolean} true if the session ID is valid
    */
-  private verifySession(
-    apiKey: string, appSessionId: string, req: Request): boolean {
+  private async verifySession(
+    apiKey: string, appSessionId: string, req: Request): Promise<boolean> {
     // Verify Request Date is Valid
     const dateString = req.headers.date;
     const maxDateDifference = this.appConfig.valueForKey('maxRequestDateDifference') as number;
@@ -180,7 +184,9 @@ export class ApiXManager {
     // Verify Session
     const salt = req.header('API-X-Salt') || '';
     const hash = createHash('sha256');
-    const appKey = this.appDataManager.getAppKeyForApiKey(apiKey) || '';
+    const appKey = ApiXManager.isAsyncMethod(this.appDataManager.getAppKeyForApiKey)
+          ? await this.appDataManager.getAppKeyForApiKey(apiKey)
+          : this.appDataManager.getAppKeyForApiKey(apiKey) || '';
     const httpBody = Object.keys(req.body).length > 0 ?
           JSON.stringify(req.body, Object.keys(req.body).sort()) : '';
     const httpBodyBase64 = httpBody.length > 0 ?
@@ -202,9 +208,11 @@ export class ApiXManager {
    * @param {string} apiKey Api Key of the request
    * @return {boolean} true if API Key is valid
    */
-  private verifyApp(
-    apiKey: string): boolean {
-    const appKey = this.appDataManager.getAppKeyForApiKey(apiKey);
+  private async verifyApp(
+    apiKey: string): Promise<boolean> {
+    const appKey = ApiXManager.isAsyncMethod(this.appDataManager.getAppKeyForApiKey)
+        ? await this.appDataManager.getAppKeyForApiKey(apiKey)
+        : this.appDataManager.getAppKeyForApiKey(apiKey);
     return appKey != null && appKey.length > 0;
   }
 
@@ -263,5 +271,10 @@ export class ApiXManager {
   private isMethodRegistered(appMethod: ApiXMethod): boolean {
     const method = this.registeredMethods[this.endpointForMethod(appMethod)];
     return method && method.httpMethod == appMethod.httpMethod;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  private static isAsyncMethod(caller: Function): boolean {
+    return caller.constructor.name == 'AsyncFunction';
   }
 }
