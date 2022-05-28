@@ -100,10 +100,7 @@ export class ApiXManager {
         return;
       }
 
-      const clearanceLevel =
-          (ApiXManager.isAsyncMethod(self.clearanceLevelDeterminator.determine)
-          ? await self.clearanceLevelDeterminator.determine(appMethod, req)
-          : self.clearanceLevelDeterminator.determine(appMethod, req)) as ApiXClearanceLevel;
+      const clearanceLevel = await self.clearanceLevelDeterminator.determine(appMethod, req);
 
       if (!self.verifyClearanceLevel(appMethod.requiredClearanceLevel || ApiXClearanceLevel.CL6, clearanceLevel)) {
         res.send(makeApiXErrorResponse(ApiXErrorResponseMessage.unauthorizedRequest));
@@ -117,9 +114,7 @@ export class ApiXManager {
         return;
       }
 
-      res.send(ApiXManager.isAsyncMethod(appMethod.requestHandler)
-          ? await appMethod.requestHandler(req, res)
-          : appMethod.requestHandler(req, res));
+      res.send(await appMethod.requestHandler(req, res));
     };
 
     this.registerHandlerForAppMethod(methodWrappedHandler, appMethod, endpoint);
@@ -184,9 +179,7 @@ export class ApiXManager {
     // Verify Session
     const salt = req.header('API-X-Salt') || '';
     const hash = createHash('sha256');
-    const appKey = ApiXManager.isAsyncMethod(this.appDataManager.getAppKeyForApiKey)
-          ? await this.appDataManager.getAppKeyForApiKey(apiKey)
-          : this.appDataManager.getAppKeyForApiKey(apiKey) || '';
+    const appKey = await this.appDataManager.getAppKeyForApiKey(apiKey) || '';
     const httpBody = Object.keys(req.body).length > 0 ?
           JSON.stringify(req.body, Object.keys(req.body).sort()) : '';
     const httpBodyBase64 = httpBody.length > 0 ?
@@ -210,9 +203,7 @@ export class ApiXManager {
    */
   private async verifyApp(
     apiKey: string): Promise<boolean> {
-    const appKey = (ApiXManager.isAsyncMethod(this.appDataManager.getAppKeyForApiKey)
-        ? await this.appDataManager.getAppKeyForApiKey(apiKey)
-        : this.appDataManager.getAppKeyForApiKey(apiKey)) as string;
+    const appKey = await this.appDataManager.getAppKeyForApiKey(apiKey);
     return appKey != null && appKey.length > 0;
   }
 
@@ -271,10 +262,5 @@ export class ApiXManager {
   private isMethodRegistered(appMethod: ApiXMethod): boolean {
     const method = this.registeredMethods[this.endpointForMethod(appMethod)];
     return method && method.httpMethod == appMethod.httpMethod;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  private static isAsyncMethod(caller: Function): boolean {
-    return caller.constructor.name == 'AsyncFunction';
   }
 }
