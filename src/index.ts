@@ -1,42 +1,49 @@
-import {ApiXConfig as ApiXConfigInternal} from "./apixlib/ApiXConfig";
-import {ApiXDataManager as ApiXDataManagerInternal} from "./apixlib/ApiXDataManager";
-import {ApiXManager as ApiXManagerInternal} from "./apixlib/ApiXManager";
-import {ApiXMethod as ApiXAppMethodInternal} from "./apixlib/ApiXMethod";
-import {ApiXErrorResponseMessage as ApiXErrorResponseMessageInternal} from "./apixlib/common/ApiXErrorResponseMessage";
-import {makeApiXErrorResponse as makeApiXErrorResponseInternal} from "./apixlib/common/makeApiXErrorResponse";
-import {ApiXUrlRequestQuery as ApiXUrlRequestQueryInternal} from "./apixlib/ApiXConstants";
-import {ApiXClearanceLevel as ApiXClearanceLevelInternal} from "./apixlib/common/ApiXClearanceLevel";
-import {ApiXClearanceLevelDeterminator as ApiXClearanceLevelDeterminatorInternal} from "./apixlib/common/ApiXClearanceLevel";
-import {ApiXRequestHandler as ApiXRequestHandlerInternal} from "./apixlib/ApiXMethod";
-import {ApiXCache as ApiXCacheInternal} from "./apixlib/common/ApiXCache";
-import {ApiXMemoryStore as ApiXMemoryStoreInternal} from "./apixlib/common/ApiXCache";
+/**
+ * API Methods
+ */
+export { ApiXHttpBodyValidator } from './apixlib/common/methods/ApiXHttpBodyValidator';
+export { ApiXMethod, ApiXRequestHandler } from './apixlib/common/methods/ApiXMethod';
+export { ApiXMethodCharacteristic } from './apixlib/common/methods/ApiXMethodCharacteristic';
+export { ApiXRequestInputSchema } from './apixlib/common/methods/ApiXRequestInputSchema';
+export { ApiXUrlQueryParameter } from './apixlib/common/methods/ApiXUrlQueryParameter';
+export {
+  ApiXUrlQueryParameterProcessor,
+  ApiXUrlQueryParameterPassthroughProcessor
+} from './apixlib/common/methods/ApiXUrlQueryParameterProcessor';
+export { ApiXUrlQueryParameterValidator } from './apixlib/common/methods/ApiXUrlQueryParameterValidator';
+export { ApiXRequest } from './apixlib/common/ApiXRequest';
 
-export const ApiXErrorResponseMessage = ApiXErrorResponseMessageInternal;
-export type ApiXErrorResponseMessage = ApiXErrorResponseMessageInternal;
+/**
+ * Access Control
+ */
+export { ApiXAccessLevel } from './apixlib/common/ApiXAccessLevel';
+export { ApiXAccessLevelEvaluator } from './apixlib/common/ApiXAccessLevelEvaluator';
 
-export type ApiXCache = ApiXCacheInternal;
+/**
+ * Data Management & Cache
+ */
+export { ApiXDataManager } from './apixlib/ApiXDataManager';
+export { ApiXCache, ApiXCacheValue } from './apixlib/common/ApiXCache';
+export { ApiXRedisStore } from './apixlib/common/ApiXRedisStore';
 
-export const ApiXMemoryStore = ApiXMemoryStoreInternal;
-export type ApiXMemoryStore = ApiXMemoryStoreInternal;
+/**
+ * Utility Types
+ */
+export { ApiXJsonDictionary } from './apixlib/common/ApiXJsonDictionary';
+export { ApiXHttpHeaders } from './apixlib/common/ApiXHttpHeaders';
 
-export const ApiXClearanceLevel = ApiXClearanceLevelInternal;
-export type ApiXClearanceLevel = ApiXClearanceLevelInternal;
+/**
+ * Configuration & Management
+ */
+export { ApiXConfig } from './apixlib/ApiXConfig';
+export { ApiXManager } from './apixlib/ApiXManager';
 
-export type ApiXClearanceLevelDeterminator = ApiXClearanceLevelDeterminatorInternal;
+import { makeApiXErrorResponse } from './apixlib/common/utils/makeApiXErrorResponse';
 
-export const ApiXConfig = ApiXConfigInternal;
-export type ApiXConfig = ApiXConfigInternal;
+const utils = {
+  makeApiXErrorResponse,
+};
 
-export type ApiXDataManager = ApiXDataManagerInternal;
-
-export const ApiXManager = ApiXManagerInternal;
-export type ApiXManager = ApiXManagerInternal;
-
-export type ApiXMethod = ApiXAppMethodInternal;
-
-export const ApiXUrlRequestQuery = ApiXUrlRequestQueryInternal;
-export type ApiXUrlRequestQuery = ApiXUrlRequestQueryInternal;
-
-export type ApiXRequestHandler = ApiXRequestHandlerInternal;
-
-export const makeApiXErrorResponse = makeApiXErrorResponseInternal;
+export {
+  utils
+};
