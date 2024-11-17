@@ -16,6 +16,8 @@
         "@typescript-eslint"
     ],
     "rules": {
-        "no-console": "warn"
+        "no-console": "warn",
+        "sort-imports": "warn",
+        "@typescript-eslint/no-this-alias": "off"
     }
 }

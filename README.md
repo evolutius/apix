@@ -1,14 +1,10 @@
 # API-X
 
-## Description
-API-X is a generic HTTP RESTful API build on top of express. It makes it really easy and fast to build a secure and fast API with features such as:
-- Authentication
-- Authorization
-- Application Verification
-- Session Verification
-- Parameter Verification
-- Caching
-- Among others
+**API-X** is a Node.js TypeScript package designed to simplify the process of building secure and scalable RESTful APIs. It is built on top of [Express](https://expressjs.com/) and offers enhanced features for ease of use, security, and rapid development.
+
+API-X includes features like request signing, application authentication, access control, and SSL/TLS enforcement, making it an excellent choice for developers who want to create secure APIs with minimal effort.
+
+See additional documentation in the `./documentation` directory.
 
 ## Pipelines
 <a href="#">

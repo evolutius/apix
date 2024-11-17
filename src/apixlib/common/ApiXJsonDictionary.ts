@@ -1,2 +1,5 @@
 
-export type ApiXJsonDictionary<T> = {[key: string]: T};
+/**
+ * A JSON dictionary.
+ */
+export type ApiXJsonDictionary<T> = Record<string, T>;

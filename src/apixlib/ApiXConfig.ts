@@ -1,6 +1,23 @@
 import fs from 'fs';
 
-type ApiXConfigDictionary = {[key: string]: unknown};
+type ApiXConfigDictionary = Record<string, unknown>;
+
+/**
+ * API-X Configuration Keys.
+ */
+export const enum ApiXConfigKey {
+  /**
+   * Determines the maximum difference in a date that is
+   * tolerated before a request is considered invalid. Defaults to
+   * `60000` milliseconds / 1 minute.
+   */
+  MaxRequestAge = 'maxRequestAge',
+
+  /**
+   * The port that the API-X listens on.
+   */
+  Port = 'port'
+}
 
 /**
  * App Configuration Data
@@ -16,22 +33,17 @@ export class ApiXConfig {
       const data = fs.readFileSync(configFile, 'utf-8');
       this.config = JSON.parse(data);
 
-      if (this.valueForKey('maxRequestDateDifference') === undefined) {
-        this.setValueForKey(5000, 'maxRequestDateDifference');
+      if (this.valueForKey(ApiXConfigKey.MaxRequestAge) === undefined) {
+        this.setValueForKey(60000, ApiXConfigKey.MaxRequestAge);
       }
 
-      if (this.valueForKey('appSessionOnce') === undefined) {
-        this.setValueForKey(true, 'appSessionOnce');
-      }
-
-      if (this.valueForKey('port') === undefined) {
-        this.setValueForKey(3000, 'port');
+      if (this.valueForKey(ApiXConfigKey.Port) === undefined) {
+        this.setValueForKey(3000, ApiXConfigKey.Port);
       }
     } catch {
       this.config = {
-        'appSessionOnce': true,
-        'maxRequestDateDifference': 5000,
-        'port': 3000
+        [ApiXConfigKey.MaxRequestAge]: 60000,
+        [ApiXConfigKey.Port]: 3000
       };
     }
   }
