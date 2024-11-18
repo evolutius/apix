@@ -26,7 +26,7 @@ describe('ApiXInputQueryParameterProcessor', () => {
       readonly id: string;
       readonly filters?: Array<string>;
       readonly sortBy?: string;
-    };
+    }
 
     const arrayProcessor: jest.Mocked<ApiXUrlQueryParameterProcessor<Array<string>>> = {
       process: jest.fn().mockImplementation((name: string, value: string): [string, Array<string>] => {
@@ -62,7 +62,7 @@ describe('ApiXInputQueryParameterProcessor', () => {
       readonly id: string;
       readonly filters?: Array<string>;
       readonly sortBy?: string;
-    };
+    }
 
     const arrayProcessor: jest.Mocked<ApiXUrlQueryParameterProcessor<Array<string>>> = {
       process: jest.fn().mockImplementation((name: string, value: string): [string, Array<string>] => {
@@ -95,7 +95,7 @@ describe('ApiXInputQueryParameterProcessor', () => {
       readonly id: string;
       readonly filters?: Array<string>;
       readonly sortBy?: string;
-    };
+    }
 
     mockValidator = {
       isValid: jest.fn().mockReturnValue(false)
@@ -131,7 +131,7 @@ describe('ApiXInputQueryParameterProcessor', () => {
       readonly id: string;
       readonly filters?: Array<string>;
       readonly sortBy?: string;
-    };
+    }
 
     mockValidator = {
       isValid: jest.fn().mockReturnValue(false)
