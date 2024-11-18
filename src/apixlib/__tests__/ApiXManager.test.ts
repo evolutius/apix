@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { ApiXManager } from '../ApiXManager';
-import { ApiXAccessLevel, ApiXAccessLevelEvaluator } from '../common/ApiXAccessLevel';
+import { ApiXAccessLevel } from '../common/ApiXAccessLevel';
+import { ApiXAccessLevelEvaluator } from '../common/ApiXAccessLevelEvaluator';
 import { Express } from 'express';
 import { ApiXConfig, ApiXConfigKey } from '../ApiXConfig';
 import { ApiXMethodCharacteristic } from '../common/methods/ApiXMethodCharacteristic';
