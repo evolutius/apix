@@ -7,8 +7,8 @@ import { RedisClientType, createClient } from 'redis';
 export class ApiXRedisStore implements ApiXCache {
   private client: RedisClientType;
 
-  constructor(redisUrl = 'redis://localhost:6379') {
-    this.client = createClient({ url: redisUrl });
+  constructor(redisUrl = 'redis://localhost:6379', username?: string, password?: string) {
+    this.client = createClient({ url: redisUrl, username, password });
     this.client.connect().catch(console.error);
   }
 
