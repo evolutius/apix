@@ -23,8 +23,12 @@ import { makeApiXErrorResponse } from './common/utils/makeApiXErrorResponse';
 type ExpressHandler = (req: Request, res: Response) => Promise<void>;
 
 /**
- * Main class of the API
- * Request body and method response is always assumed to be JSON
+ * A manager class that handles incoming connections and routing.
+ * Request body and method response is always assumed to be JSON.
+ * 
+ * {@label MANAGER}
+ * 
+ * @category Building HTTP RESTful APIs
  */
 export class ApiXManager {
   private app;

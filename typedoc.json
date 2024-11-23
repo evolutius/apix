@@ -5,5 +5,8 @@
   "plugin": [
     "typedoc-github-theme"
   ],
-  "projectDocuments": ["documentation/*.md"]
+  "projectDocuments": ["documentation/*.md"],
+  "navigation": {
+    "includeCategories": true
+  }
 }

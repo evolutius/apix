@@ -1,3 +1,7 @@
+---
+title: API-X Security and Access Control
+category: API Security
+---
 API-X is designed to allow developers to implement secure endpoints with simplicity and flexibility. It allows developers to use one of several well tested authentication and authorization mechanisms, and provides options while abstracting the complicates details behind each approach.
 
 API-X will ask developers simple questions such as:
@@ -15,7 +19,7 @@ When endpoints are not encrypted, anyone on the same network as any client can s
 
 _Note: While API-X does enforce encrypted endpoints, it is still the developer's responsibility to enable SSL / TLS / HTTPS on their server. API-X will simply refuse to serve non-encrypted requests. Additionally, API-X provides a developer mode that temporarily disables this requirements. Developer mode is designed to help developers build fast. It disables many security mechanism and it is **critical** that it be disabled in a production environment._
 
-> For more information on Developer Mode, see `ApiXManager.developerModeEnabled`.
+> For more information on Developer Mode, see [ApiXManager#developerModeEnabled](/classes/apix.ApiXManager.html#developerModeEnabled).
 
 ## Request Integrity Verification
 
@@ -35,11 +39,11 @@ API-X then will use a data manager ask developers a simple question:
 
 > Who is this API Key?
 
-Most of the time, this will translate into a simple database read. Developers answer this question through a concrete implementation of an `ApiXDataManager` class, which requires a method that resolves this.
+Most of the time, this will translate into a simple database read. Developers answer this question through a concrete implementation of an [ApiXDataManager](/classes/apix.ApiXDataManager.html) class, which requires a method that resolves this.
 
-> For more details, see `ApiXDataManager` and `ApiXDataManager.getAppKeyForApiKey`.
+> For more details, see [ApiXManager](/classes/apix.ApiXManager.html) and [ApiXDataManager#getAppKeyForApiKey](/classes/apix.ApiXDataManager.html#getAppKeyForApiKey).
 
-> For details on how to securely store API Keys on clients, see {@page Securely_Store_Keys_on_iOS_Android_and_Web_Applications.md _Securely Store Keys on iOS, Android, and Web Applications_ }.
+> For details on how to securely store API Keys on clients, see [_Securely Store Keys on iOS, Android, and Web Applications_](./Securely_Store_Keys_on_iOS_Android_and_Web_Applications.md).
 
 ## Request Authenticity and Integrity
 
@@ -83,7 +87,7 @@ X-Signature-Nonce: <nonce>
 Date: <UTC Date / Timestamp>
 ```
 
-> For details on how to securely store cryptographic keys on clients, see {@page Securely_Store_Keys_on_iOS_Android_and_Web_Applications.md _Securely Store Keys on iOS, Android, and Web Applications_ }.
+> For details on how to securely store cryptographic keys on clients, see [_Securely Store Keys on iOS, Android, and Web Applications_](./Securely_Store_Keys_on_iOS_Android_and_Web_Applications.md).
 
 ## Access Control
 
@@ -91,18 +95,18 @@ API-X provides an access control mechanism that developers use to:
 1. Determine which applications have access to what resources / endpoints; and,
 2. Determine _how much_ access each application has to each resources.
 
-This mechanism is called _Clearance Levels_. Clearance levels allow developers to specify the level of permission required to access each endpoint, as well as how much data each level of permission affords for a given endpoint.
+This mechanism is called _Access Levels_. Access levels allow developers to specify the level of permission required to access each endpoint, as well as how much data each level of permission affords for a given endpoint.
 
 To enable this mechanism, API-X asks 2 questions to developers:
-1. What clearance level is required for your endpoint?
-2. What clearance level does _this_ request has for _that_ endpoint?
+1. What access level is required for your endpoint?
+2. What access level does _this_ request has for _that_ endpoint?
 
 The first is asked when creating the endpoint, providing fixed but concrete permission requirements for the endpoint. The second question is asked during the course of an ongoing request. This provides developers with flexibility to setup their own permission requirements per request, and integrate with industry standard authorization mechanisms like JSON Web Tokens (JWTs) and OAuth 2.0.
 
-Clearance levels do _not_ replace JWTs, OAuth 2.0, OpenID Connect, nor any other of the industry standard mechanisms, but rather they can work together to provide clear permission expectations of your applications. API-X provides clear guidance and examples of which clearance level should be assigned to endpoints given the resources it grants access to, and how to assign clearance levels to requests considering aspects such as the nature of the resources, as well as the ownership relationship between requestor and data. API-X also provides examples on how to integrate clearance levels with JSON Web Tokens.
+Access levels do _not_ replace JWTs, OAuth 2.0, OpenID Connect, nor any other of the industry standard mechanisms, but rather they can work together to provide clear permission expectations of your applications. API-X provides clear guidance and examples of which access level should be assigned to endpoints given the resources it grants access to, and how to assign access levels to requests considering aspects such as the nature of the resources, as well as the ownership relationship between requestor and data. API-X also provides examples on how to integrate access levels with JSON Web Tokens.
 
 ## Application Registration
 
 API-X works to secure endpoints by working for Authorized applications only. However, the application registration is specific to the use of APIs. For example, APIs designed to be used only by the owners is a private API, and the process to register applications can be quite simple. However, public APIs (APIs that other developers can use for their own applications) require different registration process that must also be secured. It's imperative that secret keys are _never_ transmitted via a request, and as such, measures must be taken, such as using _Key Agreement Protocols_.
 
-> For more details, see {@page Securely_Registering_New_Applications.md _Securely Registering New Applications_ }.
+> For more details, see [_Securely Registering New Applications_](./Securely_Registering_New_Applications.md).

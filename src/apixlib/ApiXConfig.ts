@@ -4,6 +4,10 @@ type ApiXConfigDictionary = Record<string, unknown>;
 
 /**
  * API-X Configuration Keys.
+ * 
+ * @category API Configuration
+ * 
+ * @enum
  */
 export const enum ApiXConfigKey {
   /**
@@ -20,7 +24,10 @@ export const enum ApiXConfigKey {
 }
 
 /**
- * App Configuration Data
+ * An object that represents the configuration of the API.
+ * By default, configuration files are expected to be named `apix.config.json`.
+ * 
+ * @category API Configuration
  */
 export class ApiXConfig {
   private config: ApiXConfigDictionary;

@@ -1,4 +1,11 @@
 /**
+ * API-X Library
+ * @module apix
+ * 
+ * @category Developer Documentation
+ */
+
+/**
  * API Methods
  */
 export { ApiXHttpBodyValidator } from './apixlib/common/methods/ApiXHttpBodyValidator';

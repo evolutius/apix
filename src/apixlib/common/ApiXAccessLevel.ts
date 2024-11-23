@@ -7,6 +7,9 @@
  * 2. The amount of access or ownership to said method and its resources.
  * 
  * The highest level of access is `Admin`, and the lowest is `Public`.
+ * 
+ * @category Resource Access Permissions
+ * @enum
  */
 export enum ApiXAccessLevel {
   /**

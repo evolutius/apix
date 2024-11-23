@@ -5,6 +5,8 @@ import { Request } from 'express';
 /**
  * A class to process a request and get a finalized version
  * of the query parameters.
+ * 
+ * @category Working with HTTP Endpoints
  */
 export class ApiXInputUrlQueryParameterProcessor<T extends ApiXRequestInputSchema> {
 

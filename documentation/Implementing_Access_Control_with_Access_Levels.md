@@ -1,3 +1,8 @@
+---
+title: Implementation Access Control with Access Levels
+category: Developer Documentation
+group: Security
+---
 Access levels are API-X mechanism that evaluates who has access to what resources and to what extent. It has enough flexibility for developers to decide how and to what extent to protect their data.
 
 Fixed access levels are defined for each endpoint based on the data or operation it grants access to. Additionlly, each valid request has its own access level that determines the access it has to the endpoint that the request is directed to.
