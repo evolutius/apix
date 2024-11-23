@@ -4,6 +4,11 @@
  * 
  * These characteristics are used to limit access to resources, operations, and endpoints
  * by clearance level.
+ * 
+ * @category Working with HTTP Endpoints
+ * @enum
+ * 
+ * @see {@link ApiXMethod#characteristics}
  */
 export const enum ApiXMethodCharacteristic {
   /**

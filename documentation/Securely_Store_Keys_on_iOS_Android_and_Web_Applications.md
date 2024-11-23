@@ -1,3 +1,7 @@
+---
+title: Securely Store Keys on iOS, Android, and Web Applications
+category: API Security
+---
 In modern application development, ensuring that sensitive data such as API keys and application signing keys are securely stored is essential to prevent unauthorized access. This article provides best practices for securely storing keys on iOS, Android, and web applications.
 
 ## Storing Keys on iOS Applications

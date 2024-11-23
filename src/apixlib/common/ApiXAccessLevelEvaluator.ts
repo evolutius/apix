@@ -27,6 +27,8 @@ import { Request } from 'express';
  * can be sent to the requestor given their access level. For example, a requestor
  * with `ResourceOwner` accessing a method that only requires `AuthenticatedRequestor` may be able to access
  * additional resources within the method, should they request it.
+ * 
+ * @category Resource Access Permissions
  */
 export interface ApiXAccessLevelEvaluator {
   /**

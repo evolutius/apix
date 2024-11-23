@@ -1,3 +1,7 @@
+---
+title: Getting Started
+category: Developer Documentation
+---
 Welcome to **API-X**! This guide will help you get up and running with API-X, a Node.js TypeScript package for building secure and scalable RESTful APIs quickly. API-X is built on top of [Express](https://expressjs.com/) and offers additional security and ease-of-use features, making it the perfect choice for secure API development.
 
 ## Prerequisites
@@ -201,8 +205,8 @@ And the response JSON should be:
 
 You’ve just created your first secure API using API-X! Here are some ideas for what you could do next:
 
-1. **Explore API-X Features**: Learn more about security, request signing, access levels, and other features provided by API-X. See {@page API_X_Security_and_Access_Control.md _API-X Security and Access Control_ }.
-2. **Add More Endpoints**: Start building out your API with more endpoints, each protected with the appropriate security. See {@page Implementing_API_X_Endpoints.md _Implementing API-X Endpoints_ }.
+1. **Explore API-X Features**: Learn more about security, request signing, access levels, and other features provided by API-X. See [_API-X Security and Access Control_](./API_X_Security_and_Access_Control.md).
+2. **Add More Endpoints**: Start building out your API with more endpoints, each protected with the appropriate security. See [_Implementing API-X Endpoints_](./Implementing_API_X_Endpoints.md).
 3. **Read the Documentation**: Dive deeper into API-X’s functionality and features by checking the full documentation.
 
 Happy coding!

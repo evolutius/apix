@@ -1,3 +1,7 @@
+---
+title: Securely Registering New Applications
+category: API Security
+---
 API-X provides the foundation for building secure APIs with simplicity. However, application registration is still the developer's responsibility. Registering new applications entirely depend on the specific use case of the API, and therefore, API-X provides guidance on how to register new applications securely, but does not directly provide developer portals in the core package.
 
 ## Application Registration Requirements

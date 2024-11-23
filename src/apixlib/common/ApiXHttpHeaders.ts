@@ -1,5 +1,7 @@
 /**
  * Standard HTTP Header request keys.
+ * 
+ * @enum
  */
 export enum ApiXHttpHeaders {
   /**

@@ -6,6 +6,8 @@
  * 
  * It requires a way to get an Application Key for an API Key and a
  * way to get a User ID for a given Session ID.
+ * 
+ * @category Working with Databases
  */
 export interface ApiXDataManager {
   /**

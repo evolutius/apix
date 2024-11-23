@@ -8,6 +8,10 @@ import { Response } from 'express';
 
 /**
  * A request handler function type.
+ * 
+ * @category Working with HTTP Endpoints
+ * 
+ * @see {@link ApiXMethod#requestHandler}
  */
 export type ApiXRequestHandler<
   QuerySchema extends ApiXRequestInputSchema,
@@ -23,6 +27,11 @@ export type ApiXRequestHandler<
  * Represents an endpoint in you an API-X-based RESTful API. Your
  * endpoint is reaches at `/{entity}/{method}`. If an entity is not
  * defined, then it will be `/{method}`.
+ * 
+ * @category Working with HTTP Endpoints
+ * @document ../../../../documentation/Implementing_API_X_Endpoints.md
+ * 
+ * @see {@link ApiXManager#registerAppMethod}
  */
 export interface ApiXMethod<
   QuerySchema extends ApiXRequestInputSchema = Record<string, never>,
@@ -44,6 +53,8 @@ export interface ApiXMethod<
    * user.
    * 
    * It is _recommended_ that an entity is used for all methods.
+   * 
+   * @category Setting Endpoint Path
    */
   readonly entity?: string;
 
@@ -61,6 +72,8 @@ export interface ApiXMethod<
    * 
    * As seen in the example above, a method can have a template for a parameter,
    * such as `":id"`.
+   * 
+   * @category Setting Endpoint Path
    */
   readonly method: string;
 
@@ -70,11 +83,15 @@ export interface ApiXMethod<
    * All validation and verification is performed before the request reaches your
    * handler. However, if the need arises, you can perform any application-specific
    * verification here as well.
+   * 
+   * @category Handling Requests
    */
   readonly requestHandler: ApiXRequestHandler<QuerySchema, BodySchema>;
 
   /**
    * The HTTP method of your endpoint.
+   * 
+   * @category Setting HTTP Method
    */
   readonly httpMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'ALL';
 
@@ -86,6 +103,8 @@ export interface ApiXMethod<
    * 
    * The parsed parameters will be passed to the `requestHandler` in the template
    * schema set.
+   * 
+   * @category Handling Query Parameters
    */
   readonly queryParameters?: ReadonlyArray<ApiXUrlQueryParameter<unknown>>;
 
@@ -95,12 +114,16 @@ export interface ApiXMethod<
    * 
    * Set `jsonBodyRequired` to `true` if you want an immediate failure if the body
    * is missing or empty.
+   * 
+   * @category Handling Request JSON Body
    */
   readonly jsonBodyValidator?: ApiXHttpBodyValidator<BodySchema>;
 
   /**
    * A boolean value that determines whether the request must include an HTTP
    * JSON body.
+   * 
+   * @category Handling Request JSON Body
    */
   readonly jsonBodyRequired?: boolean;
 
@@ -110,6 +133,8 @@ export interface ApiXMethod<
    * endpoint.
    * 
    * This set must _not_ be empty.
+   * 
+   * @category Managing Access Control
    */
   readonly characteristics: ReadonlySet<ApiXMethodCharacteristic>;
 }

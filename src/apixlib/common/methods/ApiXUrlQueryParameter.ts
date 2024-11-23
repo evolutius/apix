@@ -28,6 +28,23 @@ export class InvalidParameterError extends Error {
  * 
  * In this example, there are 2 parameters, `paramName` and `param2`, and
  * each has a value of `paramValue` and `value2`, respectively.
+ * 
+ * @example
+ * ```ts
+ * const queryParameters = [
+ *   // input is paramName, so it's expected to be `/entity/method?paramName=some_value`
+ *   new ApiXUrlQueryParameter('paramName', someValidator, someProcessor, true),
+ *   // input is 'ANOTHER_PARAM', so it's expected to be `/entity/method?ANOTHER_PARAM=some_value`
+ *   // use someProcessor to transform the name into something like anotherParam
+ *   new ApiXUrlQueryParameter('ANOTHER_PARAM', someValidator, someProcessor)
+ * ]
+ * ```
+ * 
+ * @category Working with HTTP Endpoints
+ * 
+ * @see {@link ApiXMethod#queryParameters}
+ * {@link ApiXUrlQueryParameterValidator}
+ * {@link ApiXUrlQueryParameterProcessor}
  */
 export class ApiXUrlQueryParameter<T> {
   private _name: string;

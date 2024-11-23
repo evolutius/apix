@@ -5,6 +5,8 @@ import { Request } from 'express';
 /**
  * A request made to an API-X endpoint. An extension
  * of `express.Request`.
+ * 
+ * @category Working with API Endpoints
  */
 export interface ApiXRequest<
   QuerySchema extends ApiXRequestInputSchema = Record<string, never>,

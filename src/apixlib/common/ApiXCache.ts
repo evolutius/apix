@@ -1,5 +1,7 @@
 /**
  * A value for a cache.
+ * 
+ * @category Working with Caches
  */
 export declare type ApiXCacheValue = 
   string
@@ -15,6 +17,8 @@ export declare type ApiXCacheValue =
  * This interface requires at least support for a key-value store.
  * If a class implements this interface and it is provided to the ApiXManager,
  * the ApiX will have enhanced security and faster operation.
+ * 
+ * @category Working with Caches
  */
 export interface ApiXCache {
   /**

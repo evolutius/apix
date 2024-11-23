@@ -1,6 +1,20 @@
 
 /**
  * An interface for a validator of a URL query parameter.
+ * 
+ * @example
+ * ```ts
+ * // validates a search keywords parameter.
+ * class KeywordsUrlQueryParameterValidator implements ApiXUrlQueryParameterValidator {
+ *   isValid(name: string, value: string): boolean {
+ *     // keyword are only alphanumeric with limited punctuation. Example only.
+ *     const regex = /^[a-zA-Z0-9.,'" ]+$/;
+ *     return regex.test(value);
+ *   }
+ * }
+ * ```
+ * 
+ * @category Working with HTTP Endpoints
  */
 export interface ApiXUrlQueryParameterValidator {
   /**

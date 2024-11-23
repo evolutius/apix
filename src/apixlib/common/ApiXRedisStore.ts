@@ -3,13 +3,22 @@ import { RedisClientType, createClient } from 'redis';
 
 /**
  * An implementation of a Redis store.
+ * 
+ * @category Working with Caches
+ * @beta
  */
 export class ApiXRedisStore implements ApiXCache {
   private client: RedisClientType;
 
   constructor(redisUrl = 'redis://localhost:6379', username?: string, password?: string) {
     this.client = createClient({ url: redisUrl, username, password });
-    this.client.connect().catch(console.error);
+  }
+
+  /**
+   * Connects to the Redis server.
+   */
+  async connect() {
+    this.client.connect();
   }
 
   async setValueForKey(value: ApiXCacheValue, key: string, timeToLive?: number): Promise<void> {

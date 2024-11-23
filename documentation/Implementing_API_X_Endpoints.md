@@ -1,3 +1,8 @@
+---
+title: Implementing API-X Endpoints
+category: Developer Documentation
+group: Working with HTTP Endpoints
+---
 API-X Endpoints are routes that handle an operation of an HTTP RESTful API, such a getting users data, creating a new post, among others.
 
 ## API-X Method Interface
