@@ -18,7 +18,7 @@ export class ApiXRedisStore implements ApiXCache {
    * Connects to the Redis server.
    */
   async connect() {
-    this.client.connect();
+    await this.client.connect();
   }
 
   async setValueForKey(value: ApiXCacheValue, key: string, timeToLive?: number): Promise<void> {
