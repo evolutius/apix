@@ -45,7 +45,6 @@
     "lib/**/*"
   ],
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com",
     "tag": "beta"
   },
   "dependencies": {
