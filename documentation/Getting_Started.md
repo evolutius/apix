@@ -27,13 +27,8 @@ yarn -v
 
 ## Installing API-X
 
-To install API-X in your project, first add the `@evolutius` npm registry by running the following command:
+To install API-X in your project, run the following command:
 
-```sh
-echo "@evolutius:registry=https://npm.pkg.github.com/" >> .npmrc
-```
-
-Followed by:
 ```sh
 npm install @evolutius/apix
 ```
@@ -42,6 +37,12 @@ Or if you're using yarn:
 
 ```sh
 yarn add @evolutius/apix
+```
+
+If you want to try a beta version, run:
+
+```sh
+npm install @evolutius/apix@beta
 ```
 
 This will install API-X along with all necessary dependencies.
