@@ -30,19 +30,19 @@ yarn -v
 To install API-X in your project, run the following command:
 
 ```sh
-npm install @evolutius/apix
+npm install @evlt/apix
 ```
 
 Or if you're using yarn:
 
 ```sh
-yarn add @evolutius/apix
+yarn add @evlt/apix
 ```
 
 If you want to try a beta version, run:
 
 ```sh
-npm install @evolutius/apix@beta
+npm install @evlt/apix@beta
 ```
 
 This will install API-X along with all necessary dependencies.
@@ -71,7 +71,7 @@ npx tsc --init
 Ensure you've installed all dependencies:
 
 ```sh
-npm install --save-dev @evolutius/apix express @types/express
+npm install --save-dev @evlt/apix express @types/express
 ```
 
 ### Step 2: Create Your Server
@@ -89,7 +89,7 @@ import {
   ApiXConfig,
   ApiXAccessLevel,
   ApiXRequestInputSchema
-} from '@evolutius/apix';
+} from '@evlt/apix';
 
 import { Request } from 'express';
   

@@ -4,7 +4,9 @@
 
 API-X includes features like request signing, application authentication, access control, and SSL/TLS enforcement, making it an excellent choice for developers who want to create secure APIs with minimal effort.
 
-Use the [Getting Started](./documentation/Getting_Started.md) document to take the first step.
+Use the [Getting Started](https://apix.evoluti.us/documents/Getting_Started.html) document to take the first step.
+
+Full documentation available at https://apix.evoluti.us/.
 
 ## Pipelines
 <a href="#">
