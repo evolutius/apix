@@ -41,7 +41,7 @@ export class ApiXManager {
   private appConfig: ApiXConfig;
   private accessLevelEvaluator: ApiXAccessLevelEvaluator;
   private dataManager: ApiXDataManager;
-  private appCache: ApiXCache | undefined;
+  private appCache: ApiXCache;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private registeredMethods: Record<string, ApiXMethod<any, any>>;
 
@@ -64,12 +64,13 @@ export class ApiXManager {
    * @param {ApiXAccessLevelEvaluator} evaluator An evaluator to perform access control.
    * @param {ApiXDataManager} dataManager An object that manages date for consumption by the API.
    * @param {ApiXConfig} appConfig An object with the configuration of the API.
+   * @param {ApiXCache} appCache A cache used for the API.
    */
   public constructor(
       evaluator: ApiXAccessLevelEvaluator,
       dataManager: ApiXDataManager,
       appConfig: ApiXConfig,
-      appCache?: ApiXCache
+      appCache: ApiXCache
   ) {
     this.app = express();
     this.appConfig = appConfig;
@@ -269,7 +270,7 @@ export class ApiXManager {
     const key = apiKey + signature;
 
     // Verify this apiKey and signature combination has not been used before.
-    if (await this.appCache?.valueForKey(key) as string === signature) {
+    if (await this.appCache.valueForKey(key) as string === signature) {
       return false;
     }
 
@@ -280,14 +281,14 @@ export class ApiXManager {
     const httpBodyBase64 = httpBody.length > 0 ?
           Buffer.from(httpBody, 'binary').toString('base64') : '';
     const message =
-      `${req.path}.${req.method}.${signatureNonce}.${dateString}.${httpBodyBase64}`;
+      `${req.path}.${req.method.toUpperCase()}.${signatureNonce}.${dateString}.${httpBodyBase64}`;
     const calculatedSignature = hmac
       .update(message, 'utf-8')
       .digest()
       .toString('hex');
     
     if (calculatedSignature === signature) {
-      await this.appCache?.setValueForKey(signature, key);
+      await this.appCache.setValueForKey(signature, key);
     }
 
     return calculatedSignature === signature;
