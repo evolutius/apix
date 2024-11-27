@@ -1,9 +1,14 @@
-import { Request } from 'express';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import {
+  ApiXUrlQueryParameter,
+  InvalidParameterError,
+  MissingRequiredParameterError
+} from '../ApiXUrlQueryParameter';
 import { ApiXInputUrlQueryParameterProcessor } from '../ApiXInputUrlQueryParameterProcessor';
-import { ApiXUrlQueryParameter, InvalidParameterError, MissingRequiredParameterError } from '../ApiXUrlQueryParameter';
+import { ApiXRequestInputSchema } from '../ApiXRequestInputSchema';
 import { ApiXUrlQueryParameterProcessor } from '../ApiXUrlQueryParameterProcessor';
 import { ApiXUrlQueryParameterValidator } from '../ApiXUrlQueryParameterValidator';
-import { ApiXRequestInputSchema } from '../ApiXRequestInputSchema';
+import { Request } from 'express';
 
 describe('ApiXInputQueryParameterProcessor', () => {
   let mockValidator: jest.Mocked<ApiXUrlQueryParameterValidator>;

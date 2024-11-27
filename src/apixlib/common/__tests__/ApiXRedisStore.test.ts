@@ -1,4 +1,4 @@
-import {ApiXRedisStore} from '../ApiXRedisStore';
+import { ApiXRedisStore } from '../ApiXRedisStore';
 
 const map: Map<string, string> = new Map();
 
