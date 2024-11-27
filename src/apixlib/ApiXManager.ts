@@ -1,8 +1,11 @@
-import bodyParser from 'body-parser';
-import express from 'express';
-import path from 'path';
-import { ApiXConfig, ApiXConfigKey } from './ApiXConfig';
-import { Request, Response } from 'express';
+import {
+  ApiXConfig,
+  ApiXConfigKey
+} from './ApiXConfig';
+import {
+  Request,
+  Response
+} from 'express';
 import { ApiXAccessLevel } from './common/ApiXAccessLevel';
 import { ApiXAccessLevelEvaluator } from './common/ApiXAccessLevelEvaluator';
 import { ApiXCache } from './common/ApiXCache';
@@ -14,8 +17,11 @@ import { ApiXMethod } from './common/methods/ApiXMethod';
 import { ApiXMethodCharacteristic } from './common/methods/ApiXMethodCharacteristic';
 import { ApiXRequest } from './common/ApiXRequest';
 import { ApiXRequestInputSchema } from './common/methods/ApiXRequestInputSchema';
+import bodyParser from 'body-parser';
 import { createHmac } from 'crypto';
+import express from 'express';
 import { makeApiXErrorResponse } from './common/utils/makeApiXErrorResponse';
+import path from 'path';
 
 /**
  * Type used to define an express handler as used in API-X.
@@ -35,7 +41,8 @@ export class ApiXManager {
   private appConfig: ApiXConfig;
   private accessLevelEvaluator: ApiXAccessLevelEvaluator;
   private dataManager: ApiXDataManager;
-  private appCache: ApiXCache | undefined;
+  private appCache: ApiXCache;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private registeredMethods: Record<string, ApiXMethod<any, any>>;
 
   /**
@@ -57,12 +64,13 @@ export class ApiXManager {
    * @param {ApiXAccessLevelEvaluator} evaluator An evaluator to perform access control.
    * @param {ApiXDataManager} dataManager An object that manages date for consumption by the API.
    * @param {ApiXConfig} appConfig An object with the configuration of the API.
+   * @param {ApiXCache} appCache A cache used for the API.
    */
   public constructor(
       evaluator: ApiXAccessLevelEvaluator,
       dataManager: ApiXDataManager,
       appConfig: ApiXConfig,
-      appCache?: ApiXCache
+      appCache: ApiXCache
   ) {
     this.app = express();
     this.appConfig = appConfig;
@@ -262,28 +270,44 @@ export class ApiXManager {
     const key = apiKey + signature;
 
     // Verify this apiKey and signature combination has not been used before.
-    if (await this.appCache?.valueForKey(key) as string === signature) {
+    if (await this.appCache.valueForKey(key) as string === signature) {
       return false;
     }
 
     // Verify Session
     const hmac = createHmac('sha256', appSigningKey);
     const httpBody = Object.keys(req.body).length > 0 ?
-          JSON.stringify(req.body, Object.keys(req.body).sort()) : '';
+          JSON.stringify(this.sortedObjectKeys(req.body)) : '';
     const httpBodyBase64 = httpBody.length > 0 ?
           Buffer.from(httpBody, 'binary').toString('base64') : '';
     const message =
-      `${req.path}.${req.method}.${signatureNonce}.${dateString}.${httpBodyBase64}`;
+      `${req.path}.${req.method.toUpperCase()}.${signatureNonce}.${dateString}.${httpBodyBase64}`;
     const calculatedSignature = hmac
       .update(message, 'utf-8')
       .digest()
       .toString('hex');
     
     if (calculatedSignature === signature) {
-      await this.appCache?.setValueForKey(signature, key);
+      await this.appCache.setValueForKey(signature, key);
     }
 
     return calculatedSignature === signature;
+  }
+
+  /**
+   * Sorts all the keys in an object recursively.
+   * @param obj The object whose key are to be sorted.
+   * @returns The object with its keys recursively sorted.
+   */
+  private sortedObjectKeys(obj: Record<string, unknown>): Record<string, unknown> {
+    const sortedObj: Record<string, unknown> = {};
+    Object.keys(obj).sort().forEach(key => {
+      const value = obj[key];
+      sortedObj[key] = value !== null && typeof value === 'object' && !Array.isArray(value)
+        ? this.sortedObjectKeys(value as Record<string, unknown>)
+        : value;
+    });
+    return sortedObj;
   }
 
   /**

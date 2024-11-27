@@ -1,4 +1,4 @@
-import {ApiXConfig, ApiXConfigKey} from '../ApiXConfig';
+import { ApiXConfig, ApiXConfigKey } from '../ApiXConfig';
 import fs from 'fs';
 
 describe('ApiXConfig', () =>{

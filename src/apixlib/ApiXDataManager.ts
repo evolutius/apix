@@ -15,5 +15,5 @@ export interface ApiXDataManager {
    * @param apiKey The API key.
    * @returns The App Key or `null`.
    */
-  getAppKeyForApiKey(apiKey: string): string | Promise<string> | null;
+  getAppKeyForApiKey(apiKey: string): string | Promise<string | null> | null;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@evlt/apix",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0-beta.2",
   "description": "A fast and secure JSON RESTful API",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -50,7 +50,6 @@
   "dependencies": {
     "-": "^0.0.1",
     "@types/express": "^5.0.0",
-    "crypto": "^1.0.1",
     "express": "^4.21.1",
     "redis": "^4.7.0"
   }

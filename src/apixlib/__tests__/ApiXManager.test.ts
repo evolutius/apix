@@ -1,21 +1,22 @@
-import request from 'supertest';
-import { ApiXManager } from '../ApiXManager';
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { ApiXConfig, ApiXConfigKey } from '../ApiXConfig';
 import { ApiXAccessLevel } from '../common/ApiXAccessLevel';
 import { ApiXAccessLevelEvaluator } from '../common/ApiXAccessLevelEvaluator';
-import { Express } from 'express';
-import { ApiXConfig, ApiXConfigKey } from '../ApiXConfig';
-import { ApiXMethodCharacteristic } from '../common/methods/ApiXMethodCharacteristic';
+import { ApiXCache } from '../common/ApiXCache';
 import { ApiXDataManager } from '../ApiXDataManager';
 import { ApiXErrorResponseMessage } from '../common/ApiXErrorResponseMessage';
-import { ApiXHttpHeaders } from '../common/ApiXHttpHeaders';
-import { ApiXCache } from '../common/ApiXCache';
-import { ApiXUrlQueryParameter } from '../common/methods/ApiXUrlQueryParameter';
-import { ApiXUrlQueryParameterValidator } from '../common/methods/ApiXUrlQueryParameterValidator';
-import { ApiXUrlQueryParameterProcessor } from '../common/methods/ApiXUrlQueryParameterProcessor';
-import { ApiXRequestInputSchema } from '../common/methods/ApiXRequestInputSchema';
-import { ApiXRequest } from '../common/ApiXRequest';
 import { ApiXHttpBodyValidator } from '../common/methods/ApiXHttpBodyValidator';
-import { ApiXMethod } from '../..';
+import { ApiXHttpHeaders } from '../common/ApiXHttpHeaders';
+import { ApiXManager } from '../ApiXManager';
+import { ApiXMethod } from '../common/methods/ApiXMethod';
+import { ApiXMethodCharacteristic } from '../common/methods/ApiXMethodCharacteristic';
+import { ApiXRequest } from '../common/ApiXRequest';
+import { ApiXRequestInputSchema } from '../common/methods/ApiXRequestInputSchema';
+import { ApiXUrlQueryParameter } from '../common/methods/ApiXUrlQueryParameter';
+import { ApiXUrlQueryParameterProcessor } from '../common/methods/ApiXUrlQueryParameterProcessor';
+import { ApiXUrlQueryParameterValidator } from '../common/methods/ApiXUrlQueryParameterValidator';
+import { Express } from 'express';
+import request from 'supertest';
 
 describe('ApiXManager', () => {
   let app: Express;
@@ -25,6 +26,7 @@ describe('ApiXManager', () => {
   let mockConfig: ApiXConfig;
   let mockCache: jest.Mocked<ApiXCache>;
   let mockValidator: jest.Mocked<ApiXUrlQueryParameterValidator>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockProcessor: jest.Mocked<ApiXUrlQueryParameterProcessor<any>>;
 
   beforeEach(() => {
@@ -76,7 +78,7 @@ describe('ApiXManager', () => {
       entity: 'entity',
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
-      requestHandler: (request, response) => {
+      requestHandler: () => {
         return { success: true };
       }
     });
@@ -85,7 +87,7 @@ describe('ApiXManager', () => {
         entity: 'entity',
         method: 'method',
         characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
-        requestHandler: (request, response) => {
+        requestHandler: () => {
           return { success: true };
         }
       });
@@ -97,7 +99,7 @@ describe('ApiXManager', () => {
       entity: 'entity',
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
-      requestHandler: (request, response) => {
+      requestHandler: () => {
         return { success: true };
       }
     });
@@ -115,7 +117,7 @@ describe('ApiXManager', () => {
       entity: 'entity',
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
-      requestHandler: (request, response) => {
+      requestHandler: () => {
         return { success: true };
       }
     });
@@ -138,7 +140,7 @@ describe('ApiXManager', () => {
       entity: 'entity',
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
-      requestHandler: (request, response) => {
+      requestHandler: () => {
         return { success: true };
       }
     });
@@ -163,7 +165,7 @@ describe('ApiXManager', () => {
       entity: 'entity',
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
-      requestHandler: (request, response) => {
+      requestHandler: () => {
         return { success: true };
       }
     });
@@ -190,7 +192,7 @@ describe('ApiXManager', () => {
       entity: 'entity',
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
-      requestHandler: (request, response) => {
+      requestHandler: () => {
         return { success: true };
       }
     });
@@ -222,7 +224,7 @@ describe('ApiXManager', () => {
       entity: 'entity',
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
-      requestHandler: (request, response) => {
+      requestHandler: () => {
         return { success: true };
       }
     });
@@ -247,7 +249,7 @@ describe('ApiXManager', () => {
       entity: 'entity',
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]), /// requires `ResourceOwner`
-      requestHandler: (request, response) => {
+      requestHandler: () => {
         return { success: true };
       }
     });
@@ -279,7 +281,7 @@ describe('ApiXManager', () => {
         new ApiXUrlQueryParameter('param1', mockValidator, mockProcessor, true),
         new ApiXUrlQueryParameter('param2', mockValidator, mockProcessor, true),
       ],
-      requestHandler: (request, response) => {
+      requestHandler: () => {
         return { success: true };
       }
     });
@@ -315,7 +317,7 @@ describe('ApiXManager', () => {
         new ApiXUrlQueryParameter('param1', mockValidator, mockProcessor, true),
         new ApiXUrlQueryParameter('param2', mockValidator, mockProcessor),
       ],
-      requestHandler: (request, response) => {
+      requestHandler: () => {
         return { success: true };
       }
     });
@@ -350,7 +352,7 @@ describe('ApiXManager', () => {
       queryParameters: [
         new ApiXUrlQueryParameter('message', mockValidator, mockProcessor, true)
       ],
-      requestHandler: (request: ApiXRequest<QueryParams>, response) => {
+      requestHandler: (request: ApiXRequest<QueryParams>) => {
         return { success: true, message: request.queryParameters?.message };
       }
     });
@@ -395,7 +397,7 @@ describe('ApiXManager', () => {
       queryParameters: [
         new ApiXUrlQueryParameter('message', mockValidator, mockProcessor, true)
       ],
-      requestHandler: (request: ApiXRequest<QueryParams>, response) => {
+      requestHandler: (request: ApiXRequest<QueryParams>) => {
         return { success: true, message: request.queryParameters?.message };
       }
     });
@@ -444,7 +446,7 @@ describe('ApiXManager', () => {
       method: 'edit',
       httpMethod: 'POST',
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
-      requestHandler: (request, response) => {
+      requestHandler: (request) => {
         const body = request.jsonBody!;
         return { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
       },
@@ -486,7 +488,7 @@ describe('ApiXManager', () => {
       method: 'edit',
       httpMethod: 'POST',
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
-      requestHandler: (request, response) => {
+      requestHandler: (request) => {
         const body = request.jsonBody;
         if (body) {
           return { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
@@ -536,7 +538,7 @@ describe('ApiXManager', () => {
       method: 'edit',
       httpMethod: 'POST',
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
-      requestHandler: (request, response) => {
+      requestHandler: (request) => {
         const body = request.jsonBody!;
         return { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
       },
@@ -574,7 +576,7 @@ describe('ApiXManager', () => {
       method: 'edit',
       httpMethod: 'POST',
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
-      requestHandler: (request, response) => {
+      requestHandler: (request) => {
         const body = request.body;
         return { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
       }
@@ -610,7 +612,7 @@ describe('ApiXManager', () => {
       method: 'new',
       httpMethod: 'PUT',
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
-      requestHandler: (request, response) => {
+      requestHandler: (request) => {
         const body = request.body;
         return {
           success: true,
@@ -657,7 +659,7 @@ describe('ApiXManager', () => {
       method: 'delete',
       httpMethod: 'DELETE',
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
-      requestHandler: (request, response) => {
+      requestHandler: (request) => {
         const body = request.body;
         return {
           success: true,
@@ -694,7 +696,7 @@ describe('ApiXManager', () => {
       entity: 'entity',
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
-      requestHandler: (request, response) => {
+      requestHandler: (request) => {
         return { success: true, message: request.query.message };
       }
     });

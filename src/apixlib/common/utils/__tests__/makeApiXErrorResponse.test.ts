@@ -1,4 +1,4 @@
-import {makeApiXErrorResponse} from '../makeApiXErrorResponse';
+import { makeApiXErrorResponse } from '../makeApiXErrorResponse';
 
 describe('Verify correct error object is returned', () => {
   test('makeApiXErrorMessage', () => {
