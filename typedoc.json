@@ -8,5 +8,22 @@
   "projectDocuments": ["documentation/*.md"],
   "navigation": {
     "includeCategories": true
-  }
+  },
+  "highlightLanguages": [
+    "bash",
+    "console",
+    "css",
+    "html",
+    "javascript",
+    "json",
+    "jsonc",
+    "json5",
+    "yaml",
+    "tsx",
+    "typescript",
+    "nginx",
+    "apache",
+    "dockerfile",
+    "kotlin"
+  ]
 }

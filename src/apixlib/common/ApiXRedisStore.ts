@@ -10,8 +10,13 @@ import { RedisClientType, createClient } from 'redis';
 export class ApiXRedisStore implements ApiXCache {
   private client: RedisClientType;
 
-  constructor(redisUrl = 'redis://localhost:6379', username?: string, password?: string) {
-    this.client = createClient({ url: redisUrl, username, password });
+  /**
+   * Create an instance of a Redis cache.
+   * @param url The URL for the redis cache. Defaults to `redis://localhost:6379`.
+   * @param password An optional password (if protected).
+   */
+  constructor(url = 'redis://localhost:6379', password?: string) {
+    this.client = createClient({ url: url, password });
   }
 
   /**

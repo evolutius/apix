@@ -20,12 +20,26 @@ export const enum ApiXConfigKey {
   /**
    * The port that the API-X listens on.
    */
-  Port = 'port'
+  Port = 'port',
+
+  /**
+   * The host that the API-X binds to.
+   */
+  Host = 'host'
 }
 
 /**
  * An object that represents the configuration of the API.
  * By default, configuration files are expected to be named `apix.config.json`.
+ * 
+ * A typical config file will look like this:
+ * ```json
+ * {
+ *   "host": "127.0.0.1",
+ *   "port": 3000,
+ *   "maxRequestAge": 60000
+ * }
+ * ```
  * 
  * @category API Configuration
  */
@@ -33,7 +47,9 @@ export class ApiXConfig {
   private config: ApiXConfigDictionary;
 
   /**
-   * Constructor
+   * Creates a new configuration object.
+   * @param {string} configFile The path to the configuration file.
+   * Defaults to `apix.config.json`.
    */
   constructor(configFile = 'apix.config.json') {
     try {
@@ -47,29 +63,39 @@ export class ApiXConfig {
       if (this.valueForKey(ApiXConfigKey.Port) === undefined) {
         this.setValueForKey(3000, ApiXConfigKey.Port);
       }
+
+      if (this.valueForKey(ApiXConfigKey.Host) === undefined) {
+        this.setValueForKey('127.0.0.1', ApiXConfigKey.Host);
+      }
     } catch {
       this.config = {
         [ApiXConfigKey.MaxRequestAge]: 60000,
-        [ApiXConfigKey.Port]: 3000
+        [ApiXConfigKey.Port]: 3000,
+        [ApiXConfigKey.Host]: '127.0.0.1',
       };
     }
   }
 
   /**
-   * Retrieves a value for a key
-   * @param {string} key key in config
-   * @return {unknown} value for provided key
+   * Retrieves a value for a key.
+   * @param {string} key key in config.
+   * @returns {T} value for provided key.
+   * 
+   * @example
+   * ```ts
+   * const port = config.valueForKey<number>(ApiXConfigKey.Port) || 3000;
+   * ```
    */
-  public valueForKey(key: string): unknown {
-    return this.config[key];
+  public valueForKey<T>(key: string): T | undefined {
+    return this.config[key] as T;
   }
 
   /**
-   * Retrieves a value for a key
-   * @param {unknown} value the value to set @key
-   * @param {string} key key in config
+   * Retrieves a value for a key.
+   * @param {T} value the value to set for the key.
+   * @param {string} key key in config.
    */
-  public setValueForKey(value: unknown, key: string) {
+  public setValueForKey<T>(value: T, key: string) {
     this.config[key] = value;
   }
 }

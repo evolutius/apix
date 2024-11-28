@@ -15,11 +15,12 @@ import { ApiXHttpHeaders } from './common/ApiXHttpHeaders';
 import { ApiXInputUrlQueryParameterProcessor } from './common/methods/ApiXInputUrlQueryParameterProcessor';
 import { ApiXMethod } from './common/methods/ApiXMethod';
 import { ApiXMethodCharacteristic } from './common/methods/ApiXMethodCharacteristic';
-import { ApiXRequest } from './common/ApiXRequest';
 import { ApiXRequestInputSchema } from './common/methods/ApiXRequestInputSchema';
+import { apiXRequest } from './common/ApiXRequest';
 import bodyParser from 'body-parser';
 import { createHmac } from 'crypto';
 import express from 'express';
+import { Logger } from './common/Logger';
 import { makeApiXErrorResponse } from './common/utils/makeApiXErrorResponse';
 import path from 'path';
 
@@ -44,6 +45,7 @@ export class ApiXManager {
   private appCache: ApiXCache;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private registeredMethods: Record<string, ApiXMethod<any, any>>;
+  private logger?: Logger;
 
   /**
    * A Boolean value that determines whether developer mode is enabled.
@@ -70,13 +72,15 @@ export class ApiXManager {
       evaluator: ApiXAccessLevelEvaluator,
       dataManager: ApiXDataManager,
       appConfig: ApiXConfig,
-      appCache: ApiXCache
+      appCache: ApiXCache,
+      logger?: Logger
   ) {
     this.app = express();
     this.appConfig = appConfig;
     this.accessLevelEvaluator = evaluator;
     this.dataManager = dataManager;
     this.appCache = appCache;
+    this.logger = logger;
     this.registeredMethods = {};
 
     /// TLS / SSL enforcement
@@ -96,21 +100,22 @@ export class ApiXManager {
    * Starts the API service.
    */
   public start() {
-    if (Object.keys(this.registeredMethods).length == 0) {
+    if (Object.keys(this.registeredMethods).length === 0) {
       throw new Error('No method has been registered');
     }
     
-    if (!this.appConfig.valueForKey(ApiXConfigKey.Port)) {
+    const port = this.appConfig.valueForKey<number>(ApiXConfigKey.Port);
+    if (!port) {
       throw new Error('No port specified in API configuration');
     }
+
+    const host = this.appConfig.valueForKey<string>(ApiXConfigKey.Host) || '127.0.0.1';
     
     const self = this;
-    const port = this.appConfig.valueForKey(ApiXConfigKey.Port) as number;
-    this.app.listen(port, () => {
-      console.log(`Listening on port ${port}`);
+    this.app.listen(port, host, () => {
+      self.logger?.info(`Listening on port ${host}:${port}`);
       if (self.developerModeEnabled) {
-        console.log(`\x1b[33mWarning: Developer Mode is enabled which decreases security.
-          Make sure this is disabled in a production environment.\x1b[0m`);
+        self.logger?.warn(`\x1b[33mWarning: Developer Mode is enabled which decreases security. Make sure this is disabled in a production environment.\x1b[0m`);
       }
     });
   }
@@ -125,6 +130,10 @@ export class ApiXManager {
   >(
     appMethod: ApiXMethod<QuerySchema, BodySchema>
   ) {
+    if (this.methodProvidesOwnedResources(appMethod) && !appMethod.requestorOwnsResource) {
+      throw new Error(`Attempting to register a method that provides owned resources without implementing 'requestorOwnsResource'.`);
+    }
+
     const endpoint = this.endpointForMethod(appMethod);
     if (this.isMethodRegistered(appMethod)) {
       throw new Error('This endpoint and HTTP method already exist.');
@@ -151,13 +160,6 @@ export class ApiXManager {
 
       if (!this.developerModeEnabled && !(await self.verifyRequest(req))) {
         res.status(401).send(makeApiXErrorResponse(ApiXErrorResponseMessage.InvalidRequest));
-        return;
-      }
-
-      const requestorAccessLevel = await self.accessLevelEvaluator.evaluate(appMethod, req);
-
-      if (!self.verifyRequestAuthorization(appMethod, requestorAccessLevel)) {
-        res.status(401).send(makeApiXErrorResponse(ApiXErrorResponseMessage.UnauthorizedRequest));
         return;
       }
 
@@ -194,15 +196,34 @@ export class ApiXManager {
         return;
       }
 
-      const request = {
-        ...req,
-        accessLevel: requestorAccessLevel,
-        queryParameters,
-        jsonBody: req.body && Object.keys(req.body).length > 0
-          ? req.body : undefined
-      } as ApiXRequest<QuerySchema, BodySchema>;
+      const jsonBody = req.body && Object.keys(req.body).length > 0
+          ? req.body as BodySchema
+          : undefined;
+      
+      const accessLevel = await self.accessLevelEvaluator.evaluate(
+        appMethod, 
+        apiXRequest(
+          req,
+          ApiXAccessLevel.NoAccess, /// Provisional until actual access level is determined.
+          queryParameters,
+          jsonBody
+        )
+      );
 
-      res.send(await appMethod.requestHandler(request, res));
+      if (!self.verifyRequestAuthorization(appMethod, accessLevel)) {
+        this.logger?.warn(`Attempted access to resource without authorization.`);
+        res.status(401).send(makeApiXErrorResponse(ApiXErrorResponseMessage.UnauthorizedRequest));
+        return;
+      }
+
+      const request = apiXRequest(
+        req,
+        accessLevel,
+        queryParameters,
+        jsonBody
+      );
+      const response = await appMethod.requestHandler(request, res);
+      res.status(response.status ?? 200).send(response.data);
     };
 
     this.registerHandlerForAppMethod(methodWrappedHandler, appMethod, endpoint);
@@ -251,13 +272,18 @@ export class ApiXManager {
     const signatureNonce = req.header(ApiXHttpHeaders.SignatureNonce);
 
     // In milliseconds
-    const maxRequestAge = this.appConfig.valueForKey(ApiXConfigKey.MaxRequestAge) as number;
+    const maxRequestAge = this.appConfig.valueForKey<number>(ApiXConfigKey.MaxRequestAge);
 
-    if (!dateString || !apiKey || !signature || !signatureNonce) {
+    if (!maxRequestAge || !dateString || !apiKey || !signature || !signatureNonce) {
       return false;
     }
 
     const date = new Date(dateString).getTime();
+
+    if (isNaN(date)) {
+      return false;
+    }
+
     const now = Date.now();
     const diff = now - date;
 
@@ -265,33 +291,42 @@ export class ApiXManager {
       return false;
     }
 
-    const appSigningKey = await this.dataManager.getAppKeyForApiKey(apiKey) || '';
+    try {
+      const appSigningKey = await this.dataManager.getAppKeyForApiKey(apiKey) || '';
 
-    const key = apiKey + signature;
+      const cacheKey = apiKey + signature;
 
-    // Verify this apiKey and signature combination has not been used before.
-    if (await this.appCache.valueForKey(key) as string === signature) {
+      // Verify this apiKey and signature combination has not been used before.
+      if (await this.appCache.valueForKey(cacheKey) as string === signature) {
+        this.logger?.warn(`A request will be rejected due to signature duplication. This could be an indication of an MITM attack.`);
+        return false;
+      }
+
+      // Verify Session
+      const hmac = createHmac('sha256', appSigningKey);
+      const httpBody = Object.keys(req.body).length > 0 ?
+            JSON.stringify(this.sortedObjectKeys(req.body)) : '';
+      const httpBodyBase64 = httpBody.length > 0 ?
+            Buffer.from(httpBody, 'binary').toString('base64') : '';
+      const path = req.originalUrl.split('?')[0];
+      const search = req.originalUrl.split('?')[1] || ''
+      const pathWithQueries = `${path}${search ? `?${search}` : ''}`;
+      const message =
+        `${pathWithQueries}.${req.method.toUpperCase()}.${signatureNonce}.${dateString}.${httpBodyBase64}`;
+      const calculatedSignature = hmac
+        .update(message, 'utf-8')
+        .digest()
+        .toString('hex');
+      
+      if (calculatedSignature === signature) {
+        await this.appCache.setValueForKey(signature, cacheKey);
+      }
+
+      return calculatedSignature === signature;
+    } catch (error) {
+      this.logger?.error(`An error occurred when verifying request: ${error}`);
       return false;
     }
-
-    // Verify Session
-    const hmac = createHmac('sha256', appSigningKey);
-    const httpBody = Object.keys(req.body).length > 0 ?
-          JSON.stringify(this.sortedObjectKeys(req.body)) : '';
-    const httpBodyBase64 = httpBody.length > 0 ?
-          Buffer.from(httpBody, 'binary').toString('base64') : '';
-    const message =
-      `${req.path}.${req.method.toUpperCase()}.${signatureNonce}.${dateString}.${httpBodyBase64}`;
-    const calculatedSignature = hmac
-      .update(message, 'utf-8')
-      .digest()
-      .toString('hex');
-    
-    if (calculatedSignature === signature) {
-      await this.appCache.setValueForKey(signature, key);
-    }
-
-    return calculatedSignature === signature;
   }
 
   /**
@@ -313,11 +348,15 @@ export class ApiXManager {
   /**
    * Verifies that the app making the request is a valid app.
    * @param {string} apiKey Api Key of the request.
-   * @return {boolean} true if API Key is valid.
+   * @return {boolean} `true` if API Key is valid, `false` otherwise.
    */
   private async verifyApp(apiKey: string): Promise<boolean> {
-    const appKey = await this.dataManager.getAppKeyForApiKey(apiKey);
-    return appKey != null && appKey.length > 0;
+    try {
+      const appKey = await this.dataManager.getAppKeyForApiKey(apiKey);
+      return appKey !== null && appKey.length > 0;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -431,5 +470,20 @@ export class ApiXManager {
   ): boolean {
     const method = this.registeredMethods[this.endpointForMethod(appMethod)];
     return method && method.httpMethod == appMethod.httpMethod;
+  }
+
+  /**
+   * Determines whether a given method provides owned data / resources.
+   * @param {ApiXMethod} appMethod The method to check.
+   * @returns `true` if the method provides owned resources.
+   */
+  private methodProvidesOwnedResources<
+    QuerySchema extends ApiXRequestInputSchema,
+    BodySchema extends ApiXRequestInputSchema
+  >(
+    appMethod: ApiXMethod<QuerySchema, BodySchema>
+  ): boolean {
+    return appMethod.characteristics.has(ApiXMethodCharacteristic.PrivateOwnedData)
+        || appMethod.characteristics.has(ApiXMethodCharacteristic.PublicOwnedData);
   }
 }
