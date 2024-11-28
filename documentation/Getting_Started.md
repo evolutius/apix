@@ -2,6 +2,8 @@
 title: Getting Started
 category: Developer Documentation
 ---
+# Getting Started
+
 Welcome to **API-X**! This guide will help you get up and running with API-X, a Node.js TypeScript package for building secure and scalable RESTful APIs quickly. API-X is built on top of [Express](https://expressjs.com/) and offers additional security and ease-of-use features, making it the perfect choice for secure API development.
 
 ## Prerequisites
@@ -37,12 +39,6 @@ Or if you're using yarn:
 
 ```sh
 yarn add @evlt/apix
-```
-
-If you want to try a beta version, run:
-
-```sh
-npm install @evlt/apix@beta
 ```
 
 This will install API-X along with all necessary dependencies.
@@ -98,31 +94,25 @@ const helloWorldMethod: ApiXMethod = {
   method: 'world',
   characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
   requestHandler: (req, res) => {
-    return {
+    const data = {
       success: true,
       message: 'Hello, world!'
-    }
+    };
+    return { data }; // defaults to status 200. To change, set the `status` property.
+    // return { status: 200, data };
   }
 }
 
 class DataManager implements ApiXDataManager {
-  getAppKeyForApiKey(apiKey: string): string | Promise<string> | null {
+  getAppKeyForApiKey(apiKey: string): string | null {
     /// single app has access
     return apiKey === process.env.API_KEY ? process.env.APP_KEY! : null;
   }
 }
 
-class AccessLevelEvaluator implements ApiXAccessLevelEvaluator {
-  evaluate<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
-  >(
-    appMethod: ApiXMethod<QuerySchema, BodySchema>,
-    req: Request
-  ): ApiXAccessLevel | Promise<ApiXAccessLevel> {
-    // For access control. This is the lowest level that has access.
-    return ApiXAccessLevel.PublicRequestor;
-  }
+class AccessLevelEvaluator extends ApiXAccessLevelEvaluator {
+  // Can be used to implement additional methods such as `isAuthenticatedRequestor`
+  // when working with authentication.
 }
 
 const config = new ApiXConfig();
@@ -135,7 +125,8 @@ const manager = new ApiXManager(
   new AccessLevelEvaluator(),
   new DataManager(),
   config,
-  cache
+  cache,
+  console // during development, log to the console
 );
 
 /// Must only be used during development.
@@ -201,6 +192,8 @@ And the response JSON should be:
   "message": "Hello, world!"
 }
 ```
+
+_Note: you can also use [API-X official Node.js client](https://apix.evoluti.us/client) to implement a client for this sample server.
 
 ## Next Steps
 

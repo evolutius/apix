@@ -2,84 +2,85 @@
 title: API-X Security and Access Control
 category: API Security
 ---
-API-X is designed to allow developers to implement secure endpoints with simplicity and flexibility. It allows developers to use one of several well tested authentication and authorization mechanisms, and provides options while abstracting the complicates details behind each approach.
+# API-X Security and Access Control
 
-API-X will ask developers simple questions such as:
+API-X is designed to allow you to implement secure endpoints with simplicity and flexibility. It allows you to use one of several well tested authentication and authorization mechanisms, and provides options while abstracting the complicates details behind each approach.
+
+API-X will ask you simple questions such as:
 
 - Who does this API Key belong to (a simple database read);
 - How much authority does this application have (with guidelines to take the guess work out of it).
 
-It will then use the answer to those questions to protect your API against malicious requests and provided access control for authorized requests.
+It will then use the answer to those questions to protect your API against malicious requests and provide access control for authorized requests.
 
 ## Secure Transport Enforcement
 
-API-X enforces the use of SSL / TLS encrypted endpoints. Each request received by the API-X manager will be verified to have come from an encrypted connection, and any request that doesn't meet this requirement is rejected. This is used to encourage all developers to use an encrypted connection.
+API-X enforces SSL/TLS for all endpoints. Requests that do not come from an encrypted connection are rejected to ensure secure communication.
 
-When endpoints are not encrypted, anyone on the same network as any client can see the contents of a request and find attack vectors to compromise users, endpoints, and data.
-
-_Note: While API-X does enforce encrypted endpoints, it is still the developer's responsibility to enable SSL / TLS / HTTPS on their server. API-X will simply refuse to serve non-encrypted requests. Additionally, API-X provides a developer mode that temporarily disables this requirements. Developer mode is designed to help developers build fast. It disables many security mechanism and it is **critical** that it be disabled in a production environment._
+You must enable SSL/TLS on your server, as API-X only accepts encrypted requests. While API-X provides a developer mode to disable these checks for local development, it is **critical** to disable developer mode in production environments for security.
 
 > For more information on Developer Mode, see [ApiXManager#developerModeEnabled](/classes/apix.ApiXManager.html#developerModeEnabled).
 
 ## Request Integrity Verification
 
-Each request received by API-X will be verified to contain all required security fields, application verification, and access control prior to reaching the handler for your endpoint. This ensures that any request that reaches any endpoint is already a valid one, and handlers just need to perform verification on the value of required fields.
-
-This removes most of the validation and verification burden away from the developers so that they can focus on the business logic of their endpoints.
+API-X verifies each request to ensure it contains all required security fields, application verification, and access control before reaching the endpoint handler. This guarantees that only valid requests reach your endpoint, allowing you to focus solely on the business logic of your endpoints without worrying about additional validation.
 
 ## Application-Level Authentication
 
-Authentication is about _who_ is making a request to an API. An API-X API only serves requests to authorized applications, and it takes steps a few steps to _identify_ the application making each request. API-X uses Application Identity Verification to either serve or reject requests. Valid clients must provide a previously supplied API Key via the `X-API-Key` header:
+Authentication identifies *who* is making a request to an API. API-X serves requests only from authorized applications by verifying each request's identity using an API Key provided in the `X-API-Key` header:
 
 ```
 X-API-Key: <api_key>
 ```
 
-API-X then will use a data manager ask developers a simple question:
+API-X uses a data manager to verify the application by asking a simple question:
 
 > Who is this API Key?
 
-Most of the time, this will translate into a simple database read. Developers answer this question through a concrete implementation of an [ApiXDataManager](/classes/apix.ApiXDataManager.html) class, which requires a method that resolves this.
+Typically, this translates to a simple database lookup. You implement this using a concrete [ApiXDataManager](/classes/apix.ApiXDataManager.html) class that handles this verification.
 
 > For more details, see [ApiXManager](/classes/apix.ApiXManager.html) and [ApiXDataManager#getAppKeyForApiKey](/classes/apix.ApiXDataManager.html#getAppKeyForApiKey).
 
-> For details on how to securely store API Keys on clients, see [_Securely Store Keys on iOS, Android, and Web Applications_](./Securely_Store_Keys_on_iOS_Android_and_Web_Applications.md).
+> For information on securely storing API Keys on clients, see [*Securely Store Keys on iOS, Android, and Web Applications*](./Securely_Store_Keys_on_iOS_Android_and_Web_Applications.md).
 
 ## Request Authenticity and Integrity
 
-Even if a request comes from a presumed authenticated application, it does not mean that the request is fully trusted by API-X yet. Each request has a unique signature that a client provides, and this unique signature is used by API-X to verify that:
-1. The request indeed comes from the application that sends it;
-2. The request has not been tampered with; and,
-3. The request is not a replayed by an intermediate attacker.
+Each request has a unique signature generated by the client, which is used by API-X to verify the request's authenticity, integrity, and uniqueness.
 
-A client uses a unique secret key to sign the request, using the request's data, and the server uses a similar process to verify that the signature is valid.
+API-X uses this signature to ensure that:
+
+- The request comes from the correct application.
+- The request has not been tampered with.
+- The request is not being replayed by an attacker.
+
+The client signs the request using a secret key, and the server verifies it in the same way.
 
 ### Request Origin Verification
 
-Only the application that possess the signing key can generate a valid signature. When the server authenticates the application, it also uses information from that application to verify the request signature. If a third-party attempts to send a request, the signature will not be valid and the request will be rejected by API-X.
+Only an application with the signing key can generate a valid signature. API-X verifies the request signature using application-specific information. If a third-party attempts to send a request, the signature will not match, and the request will be rejected.
 
 ### Request Integrity Verification
 
-The signature is based on a HMAC SHA-256 hash that includes details of the request such as:
-1. The endpoint of the request;
-2. The date of the request;
-3. The data in the body of the request;
-4. Application-specific data; and,
-5. A unique nonce.
+The signature is created using a HMAC SHA-256 hash, which includes key request details such as:
 
-If any of the details in the request were to change and the same signature would be sent, then API-X would reject it as the signature wouldn't match. This prevents tampering with the request itself.
+- Endpoint and query parameters
+- HTTP method
+- Date of the request
+- Request body data
+- Application-specific data
+- A unique nonce
+
+If any part of the request changes, the signature will no longer be valid, and API-X will reject it, ensuring the request remains intact.
 
 ### Request Replay Prevention
 
-API-X invalidates each request signature after a single use to prevent relay attacks. If an attacker somehow gets a hold of the request and attempts to resend it with the same data to receive its response, API-X will reject it as the signature would have already been processed by the original request.
+API-X prevents replay attacks by invalidating each request signature after a single use. If an attacker attempts to resend a captured request, it will be rejected as the signature has already been processed.
 
-In addition, each request is accompanied by a date. This date is a UTC timestamp that represents the date in which a request was created. API-X takes steps to invalidate old requests. By default, any request older than 1 minute is rejected, however, this value is configurable.
-
-However, it's also important that each legitimate request is serviced, therefore, a unique nonce value is included with each request. A Nonce is a randomly generated value and the client generates it and uses it in the computation of the signature, ensuring its uniqueness. Even two clients make a similar request at the same time, the nonce would be different, thus resulting in a different signature.
+Each request is timestamped, and by default, requests older than one minute are rejected (this value is configurable). Additionally, a unique nonce is used to ensure that even if two requests are sent simultaneously, they will have different signatures.
 
 ### Signing a Request
 
-A client sends a signature using HTTP headers for security:
+A client, such as one built using the official [Node.js API-X Client](https://apix.evoluti.us/client/), sends a signature using HTTP headers for security:
 
 ```
 X-Signature: <unique signature>
@@ -87,26 +88,24 @@ X-Signature-Nonce: <nonce>
 Date: <UTC Date / Timestamp>
 ```
 
-> For details on how to securely store cryptographic keys on clients, see [_Securely Store Keys on iOS, Android, and Web Applications_](./Securely_Store_Keys_on_iOS_Android_and_Web_Applications.md).
+> For details on how to securely store cryptographic keys on clients, see [*Securely Store Keys on iOS, Android, and Web Applications*](./Securely_Store_Keys_on_iOS_Android_and_Web_Applications.md).
 
 ## Access Control
 
-API-X provides an access control mechanism that developers use to:
-1. Determine which applications have access to what resources / endpoints; and,
-2. Determine _how much_ access each application has to each resources.
+API-X provides an access control mechanism called *Access Levels* that you can use use to:
 
-This mechanism is called _Access Levels_. Access levels allow developers to specify the level of permission required to access each endpoint, as well as how much data each level of permission affords for a given endpoint.
+1. Determine which applications have access to specific resources/endpoints.
+2. Define the level of access each application has for those resources.
 
-To enable this mechanism, API-X asks 2 questions to developers:
-1. What access level is required for your endpoint?
-2. What access level does _this_ request has for _that_ endpoint?
+Access levels allow you to set permission requirements for each endpoint, as well as the scope of data that can be accessed. When defining an endpoint, you specify the required access level, and during a request, API-X evaluates if the request meets the necessary access level.
 
-The first is asked when creating the endpoint, providing fixed but concrete permission requirements for the endpoint. The second question is asked during the course of an ongoing request. This provides developers with flexibility to setup their own permission requirements per request, and integrate with industry standard authorization mechanisms like JSON Web Tokens (JWTs) and OAuth 2.0.
+This streamlined approach integrates seamlessly with industry-standard authorization mechanisms such as JSON Web Tokens (JWTs) and OAuth 2.0, ensuring secure and flexible access control.
 
-Access levels do _not_ replace JWTs, OAuth 2.0, OpenID Connect, nor any other of the industry standard mechanisms, but rather they can work together to provide clear permission expectations of your applications. API-X provides clear guidance and examples of which access level should be assigned to endpoints given the resources it grants access to, and how to assign access levels to requests considering aspects such as the nature of the resources, as well as the ownership relationship between requestor and data. API-X also provides examples on how to integrate access levels with JSON Web Tokens.
+For more details on how to implement access control in API-X, see [*Implementing_Access_Control_with_Access_Levels*](./Implementing_Access_Control_with_Access_Levels.md).
 
 ## Application Registration
 
-API-X works to secure endpoints by working for Authorized applications only. However, the application registration is specific to the use of APIs. For example, APIs designed to be used only by the owners is a private API, and the process to register applications can be quite simple. However, public APIs (APIs that other developers can use for their own applications) require different registration process that must also be secured. It's imperative that secret keys are _never_ transmitted via a request, and as such, measures must be taken, such as using _Key Agreement Protocols_.
+API-X secures endpoints by working only with authorized applications. The application registration process depends on the type of API. For private APIs (used only by you), registration can be straightforward and often done offline. For public APIs (available for other developers), a more secure and structured registration process is required.
 
-> For more details, see [_Securely Registering New Applications_](./Securely_Registering_New_Applications.md).
+For more details, see [*Securely Registering New Applications*](./Securely_Registering_New_Applications.md).
+

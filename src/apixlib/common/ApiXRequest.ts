@@ -27,3 +27,22 @@ export interface ApiXRequest<
    */
   readonly jsonBody?: BodySchema;
 }
+
+export function apiXRequest<
+  QuerySchema extends ApiXRequestInputSchema,
+  BodySchema extends ApiXRequestInputSchema
+>(
+  req: Request,
+  accessLevel: ApiXAccessLevel,
+  queryParameters?: QuerySchema,
+  jsonBody?: BodySchema
+): ApiXRequest<QuerySchema, BodySchema> {
+  return Object.setPrototypeOf({
+      ...req,
+      accessLevel,
+      queryParameters,
+      jsonBody
+    },
+    Object.getPrototypeOf(req)
+  );
+}

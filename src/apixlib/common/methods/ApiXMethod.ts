@@ -1,8 +1,8 @@
 import { ApiXHttpBodyValidator } from './ApiXHttpBodyValidator';
-import { ApiXJsonDictionary } from '../ApiXJsonDictionary';
 import { ApiXMethodCharacteristic } from './ApiXMethodCharacteristic';
 import { ApiXRequest } from '../ApiXRequest';
 import { ApiXRequestInputSchema } from './ApiXRequestInputSchema';
+import { ApiXResponse } from '../ApiXResponse';
 import { ApiXUrlQueryParameter } from './ApiXUrlQueryParameter';
 import { Response } from 'express';
 
@@ -19,7 +19,7 @@ export type ApiXRequestHandler<
 > = (
   req: ApiXRequest<QuerySchema, BodySchema>,
   res: Response
-) => ApiXJsonDictionary<unknown> | Promise<ApiXJsonDictionary<unknown>>;
+) => ApiXResponse | Promise<ApiXResponse>;
 
 /**
  * Interface for an ApiXMethod.
@@ -137,4 +137,38 @@ export interface ApiXMethod<
    * @category Managing Access Control
    */
   readonly characteristics: ReadonlySet<ApiXMethodCharacteristic>;
+
+  /**
+   * A function that determines whether the requestor (`request`) owns
+   * the resource they are asking to access from this endpoint.
+   * 
+   * The _resource_ is the data or operation that the endpoint provides.
+   * The _requestor_ is the identity of the application or user asking for
+   * the _resource_.
+   * 
+   * This _must_ be implemented for endpoints that provide owned resources, i.e.,
+   * have the `ApiXMethodCharacteristic.PublicOwnedData`
+   * or `ApiXMethodCharacteristic.PrivateOwnedData`, otherwise it'll throw an error
+   * when attempting to register method.
+   * 
+   * @param request The request object that contains the identity
+   * of the requestor.
+   * @returns `true` if the requestor owns it, false otherwise.
+   * 
+   * @example
+   * ```ts
+   * // An API-X Endpoint that returns data for a given user.
+   * const getUserData = {
+   *   endpoint: 'users',
+   *   method: ':uid',
+   *   ...,
+   *   requestorOwnsResource: (request) => {
+   *     const userId = 
+   *   }
+   * }
+   * ```
+   * 
+   * @category Managing Access Control
+   */
+  readonly requestorOwnsResource?: (request: ApiXRequest<QuerySchema, BodySchema>) => boolean | Promise<boolean>;
 }

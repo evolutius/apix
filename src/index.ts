@@ -2,7 +2,7 @@
  * API-X Library
  * @module apix
  * 
- * @category Developer Documentation
+ * @category API Reference
  */
 
 /**
@@ -19,6 +19,7 @@ export {
 } from './apixlib/common/methods/ApiXUrlQueryParameterProcessor';
 export { ApiXUrlQueryParameterValidator } from './apixlib/common/methods/ApiXUrlQueryParameterValidator';
 export { ApiXRequest } from './apixlib/common/ApiXRequest';
+export { ApiXResponse } from './apixlib/common/ApiXResponse';
 
 /**
  * Access Control
@@ -44,6 +45,11 @@ export { ApiXHttpHeaders } from './apixlib/common/ApiXHttpHeaders';
  */
 export { ApiXConfig } from './apixlib/ApiXConfig';
 export { ApiXManager } from './apixlib/ApiXManager';
+
+/**
+ * Logging
+ */
+export { Logger } from './apixlib/common/Logger';
 
 import { makeApiXErrorResponse } from './apixlib/common/utils/makeApiXErrorResponse';
 

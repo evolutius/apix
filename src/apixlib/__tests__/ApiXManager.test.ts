@@ -31,8 +31,8 @@ describe('ApiXManager', () => {
 
   beforeEach(() => {
     mockEvaluator = {
-      evaluate: jest.fn().mockResolvedValue(ApiXAccessLevel.PublicRequestor)
-    };
+      evaluate: jest.fn().mockResolvedValue(ApiXAccessLevel.PublicRequestor),
+    } as unknown as jest.Mocked<ApiXAccessLevelEvaluator>;
 
     mockDataManager = {
       getAppKeyForApiKey: jest.fn().mockResolvedValue('test-key'),
@@ -79,7 +79,8 @@ describe('ApiXManager', () => {
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
-        return { success: true };
+        const data = { success: true };
+        return { data };
       }
     });
     expect(() => {
@@ -88,7 +89,8 @@ describe('ApiXManager', () => {
         method: 'method',
         characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
         requestHandler: () => {
-          return { success: true };
+          const data = { success: true };
+          return { data };
         }
       });
     }).toThrow(Error);
@@ -100,7 +102,8 @@ describe('ApiXManager', () => {
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
-        return { success: true };
+        const data = { success: true };
+        return { data };
       }
     });
 
@@ -118,7 +121,8 @@ describe('ApiXManager', () => {
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
-        return { success: true };
+        const data = { success: true };
+        return { data };
       }
     });
 
@@ -141,7 +145,8 @@ describe('ApiXManager', () => {
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
-        return { success: true };
+        const data = { success: true };
+        return { data };
       }
     });
 
@@ -166,7 +171,8 @@ describe('ApiXManager', () => {
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
-        return { success: true };
+        const data = { success: true };
+        return { data };
       }
     });
 
@@ -193,7 +199,8 @@ describe('ApiXManager', () => {
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
-        return { success: true };
+        const data = { success: true };
+        return { data };
       }
     });
 
@@ -225,7 +232,8 @@ describe('ApiXManager', () => {
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
-        return { success: true };
+        const data = { success: true };
+        return { data };
       }
     });
 
@@ -244,14 +252,22 @@ describe('ApiXManager', () => {
     });
   });
 
+  it('attempting to register owned methods without implementation of `requestorOwnsResource` fails', async () => {
+    expect(() => appManager.registerAppMethod({
+      characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
+    } as unknown as ApiXMethod)).toThrow(`Attempting to register a method that provides owned resources without implementing 'requestorOwnsResource'.`);
+  });
+
   it('should reject requests with insufficient access levels', async () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]), /// requires `ResourceOwner`
       requestHandler: () => {
-        return { success: true };
-      }
+        const data = { success: true };
+        return { data };
+      },
+      requestorOwnsResource: () => false
     });
 
     /// Effectively disable request age 
@@ -282,7 +298,8 @@ describe('ApiXManager', () => {
         new ApiXUrlQueryParameter('param2', mockValidator, mockProcessor, true),
       ],
       requestHandler: () => {
-        return { success: true };
+        const data = { success: true };
+        return { data };
       }
     });
 
@@ -293,7 +310,7 @@ describe('ApiXManager', () => {
       .get('/entity/method?param1=here')
       .set(ApiXHttpHeaders.ApiKey, 'some-key')
       .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'be4b6dc790c201d12609813fdced7ccc8d54b1249dccbfe9ea32fd89e6dd9aae')
+      .set(ApiXHttpHeaders.Signature, '9d21edd19fab19fcf1df95573d78962f19271f1213a5111c0f6c8387d0afc724')
       .set(ApiXHttpHeaders.SignatureNonce, '0123456')
       .set(ApiXHttpHeaders.ForwardedProto, 'https');
 
@@ -301,6 +318,145 @@ describe('ApiXManager', () => {
     expect(response.body).toEqual({
       success: false,
       message: 'Missing required parameter param2'
+    });
+  });
+
+  it('should create the same signature with all the same request data and HTTP body differently sorted keys', async () => {
+    appManager.registerAppMethod({
+      entity: 'entity',
+      method: 'method',
+      httpMethod: 'POST',
+      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      queryParameters: [
+        new ApiXUrlQueryParameter('param1', mockValidator, mockProcessor, true),
+        new ApiXUrlQueryParameter('param2', mockValidator, mockProcessor, true),
+      ],
+      requestHandler: () => {
+        const data = { success: true };
+        return { data };
+      }
+    });
+
+    /// Effectively disable request age 
+    mockConfig.setValueForKey(Infinity, ApiXConfigKey.MaxRequestAge);
+
+    const expectedSignature = '822417805be1ba8c1cdbba85348402579a8d797ce6ec0cfe365dffc21da592f8';
+
+    let response = await request(app)
+      .post('/entity/method?param1=here&param2=there')
+      .send({
+        key1: 'value1',
+        key2: {
+          subKey1: 'value2',
+          subKey2: 'value3',
+          subKey3: {
+            subSubKey1: 'value4',
+            subSubKey2: 'value5'
+          },
+          subKey4: ['value1', 'value2']
+        }
+      })
+      .set(ApiXHttpHeaders.ApiKey, 'some-key')
+      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(ApiXHttpHeaders.Signature, expectedSignature)
+      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
+      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: true });
+
+    response = await request(app)
+      .post('/entity/method?param1=here&param2=there')
+      .send({
+        key2: {
+          subKey2: 'value3',
+          subKey1: 'value2',
+          subKey4: ['value1', 'value2'],
+          subKey3: {
+            subSubKey2: 'value5',
+            subSubKey1: 'value4'
+          }
+        },
+        key1: 'value1'
+      })
+      .set(ApiXHttpHeaders.ApiKey, 'some-key')
+      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(ApiXHttpHeaders.Signature, expectedSignature)
+      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
+      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: true });
+  });
+
+  it('should create the different signatures with all the same request and differing URL query parameters', async () => {
+    appManager.registerAppMethod({
+      entity: 'entity',
+      method: 'method',
+      httpMethod: 'POST',
+      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      queryParameters: [
+        new ApiXUrlQueryParameter('param1', mockValidator, mockProcessor, true),
+        new ApiXUrlQueryParameter('param2', mockValidator, mockProcessor, true),
+      ],
+      requestHandler: () => {
+        const data = { success: true };
+        return { data };
+      }
+    });
+
+    /// Effectively disable request age 
+    mockConfig.setValueForKey(Infinity, ApiXConfigKey.MaxRequestAge);
+
+    const expectedSignature = 'dbd08bfca5d3160c0daf4c07a886975f4a99343e4eadc78976fd3faf947cdbdc';
+
+    let response = await request(app)
+      .post('/entity/method?param1=Hello&param2=World')
+      .send({
+        key1: 'value1',
+        key2: {
+          subKey1: 'value2',
+          subKey2: 'value3',
+          subKey3: {
+            subSubKey1: 'value4',
+            subSubKey2: 'value5'
+          },
+          subKey4: ['value1', 'value2']
+        }
+      })
+      .set(ApiXHttpHeaders.ApiKey, 'some-key')
+      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(ApiXHttpHeaders.Signature, expectedSignature)
+      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
+      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: true });
+
+    response = await request(app)
+      .post('/entity/method?param1=hello&param2=world')
+      .send({
+        key2: {
+          subKey2: 'value3',
+          subKey1: 'value2',
+          subKey4: ['value1', 'value2'],
+          subKey3: {
+            subSubKey2: 'value5',
+            subSubKey1: 'value4'
+          }
+        },
+        key1: 'value1'
+      })
+      .set(ApiXHttpHeaders.ApiKey, 'some-key')
+      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(ApiXHttpHeaders.Signature, expectedSignature)
+      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
+      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ 
+      success: false,
+      message: 'This request is not valid.'
     });
   });
 
@@ -318,7 +474,8 @@ describe('ApiXManager', () => {
         new ApiXUrlQueryParameter('param2', mockValidator, mockProcessor),
       ],
       requestHandler: () => {
-        return { success: true };
+        const data = { success: true };
+        return { data };
       }
     });
 
@@ -329,7 +486,7 @@ describe('ApiXManager', () => {
       .get('/entity/method?param1=here')
       .set(ApiXHttpHeaders.ApiKey, 'some-key')
       .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'be4b6dc790c201d12609813fdced7ccc8d54b1249dccbfe9ea32fd89e6dd9aae')
+      .set(ApiXHttpHeaders.Signature, '9d21edd19fab19fcf1df95573d78962f19271f1213a5111c0f6c8387d0afc724')
       .set(ApiXHttpHeaders.SignatureNonce, '0123456')
       .set(ApiXHttpHeaders.ForwardedProto, 'https');
 
@@ -353,7 +510,8 @@ describe('ApiXManager', () => {
         new ApiXUrlQueryParameter('message', mockValidator, mockProcessor, true)
       ],
       requestHandler: (request: ApiXRequest<QueryParams>) => {
-        return { success: true, message: request.queryParameters?.message };
+        const data = { success: true, message: request.queryParameters?.message };
+        return { data };
       }
     });
 
@@ -364,7 +522,7 @@ describe('ApiXManager', () => {
       .get('/entity/method?message=This%20passed')
       .set(ApiXHttpHeaders.ApiKey, 'some-key')
       .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'be4b6dc790c201d12609813fdced7ccc8d54b1249dccbfe9ea32fd89e6dd9aae')
+      .set(ApiXHttpHeaders.Signature, 'cb78ce350cd07ad6d8cf0738c83b66139bd9ac3db742e8185ecadc4c4deddb81')
       .set(ApiXHttpHeaders.SignatureNonce, '0123456')
       .set(ApiXHttpHeaders.ForwardedProto, 'https');
 
@@ -398,7 +556,8 @@ describe('ApiXManager', () => {
         new ApiXUrlQueryParameter('message', mockValidator, mockProcessor, true)
       ],
       requestHandler: (request: ApiXRequest<QueryParams>) => {
-        return { success: true, message: request.queryParameters?.message };
+        const data = { success: true, message: request.queryParameters?.message };
+        return { data }
       }
     });
 
@@ -409,7 +568,7 @@ describe('ApiXManager', () => {
       .get('/entity/method?message=This%20passed')
       .set(ApiXHttpHeaders.ApiKey, 'some-key')
       .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'be4b6dc790c201d12609813fdced7ccc8d54b1249dccbfe9ea32fd89e6dd9aae')
+      .set(ApiXHttpHeaders.Signature, 'cb78ce350cd07ad6d8cf0738c83b66139bd9ac3db742e8185ecadc4c4deddb81')
       .set(ApiXHttpHeaders.SignatureNonce, '0123456')
       .set(ApiXHttpHeaders.ForwardedProto, 'https');
 
@@ -424,7 +583,7 @@ describe('ApiXManager', () => {
       .get('/entity/method?message=This%20passed')
       .set(ApiXHttpHeaders.ApiKey, 'some-key')
       .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'be4b6dc790c201d12609813fdced7ccc8d54b1249dccbfe9ea32fd89e6dd9aae')
+      .set(ApiXHttpHeaders.Signature, 'cb78ce350cd07ad6d8cf0738c83b66139bd9ac3db742e8185ecadc4c4deddb81')
       .set(ApiXHttpHeaders.SignatureNonce, '0123456')
       .set(ApiXHttpHeaders.ForwardedProto, 'https');
 
@@ -448,9 +607,11 @@ describe('ApiXManager', () => {
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
       requestHandler: (request) => {
         const body = request.jsonBody!;
-        return { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
+        const data = { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
+        return { data };
       },
-      jsonBodyRequired: true
+      jsonBodyRequired: true,
+      requestorOwnsResource: () => true
     } as ApiXMethod<object, RequestBody>);
 
     mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
@@ -491,16 +652,19 @@ describe('ApiXManager', () => {
       requestHandler: (request) => {
         const body = request.jsonBody;
         if (body) {
-          return { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
+          const data = { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
+          return { data };
         } else {
-          return {
+          const data = {
             success: true,
             message: 'body missing!'
           }
+          return { data };
         }
       },
       jsonBodyRequired: false,
-      jsonBodyValidator: mockBodyValidator
+      jsonBodyValidator: mockBodyValidator,
+      requestorOwnsResource: () => true
     });
 
     mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
@@ -540,10 +704,12 @@ describe('ApiXManager', () => {
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
       requestHandler: (request) => {
         const body = request.jsonBody!;
-        return { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
+        const data = { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
+        return { data };
       },
       jsonBodyRequired: true,
-      jsonBodyValidator: mockBodyValidator
+      jsonBodyValidator: mockBodyValidator,
+      requestorOwnsResource: () => true
     });
 
     mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
@@ -578,8 +744,10 @@ describe('ApiXManager', () => {
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
       requestHandler: (request) => {
         const body = request.body;
-        return { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
-      }
+        const data = { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
+        return { data };
+      },
+      requestorOwnsResource: () => true
     });
 
     mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
@@ -614,7 +782,7 @@ describe('ApiXManager', () => {
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
       requestHandler: (request) => {
         const body = request.body;
-        return {
+        const data = {
           success: true,
           post: {
             id: '0',
@@ -622,7 +790,9 @@ describe('ApiXManager', () => {
             userId: body.userId
           }
         };
-      }
+        return { data };
+      },
+      requestorOwnsResource: () => true
     });
 
     mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
@@ -661,11 +831,13 @@ describe('ApiXManager', () => {
       characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
       requestHandler: (request) => {
         const body = request.body;
-        return {
+        const data = {
           success: true,
           postId: body.postId
         };
-      }
+        return { data };
+      },
+      requestorOwnsResource: () => true
     });
 
     mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
@@ -697,7 +869,8 @@ describe('ApiXManager', () => {
       method: 'method',
       characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
       requestHandler: (request) => {
-        return { success: true, message: request.query.message };
+        const data = { success: true, message: request.query.message };
+        return { data };
       }
     });
 
