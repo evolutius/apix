@@ -65,7 +65,7 @@ export class ApiXConfig {
       }
 
       if (this.valueForKey(ApiXConfigKey.Host) === undefined) {
-        this.setValueForKey('127.0.0.1', ApiXConfigKey.Port);
+        this.setValueForKey('127.0.0.1', ApiXConfigKey.Host);
       }
     } catch {
       this.config = {

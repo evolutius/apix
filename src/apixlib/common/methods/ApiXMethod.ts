@@ -162,8 +162,10 @@ export interface ApiXMethod<
    *   endpoint: 'users',
    *   method: ':uid',
    *   ...,
-   *   requestorOwnsResource: (request) => {
-   *     const userId = 
+   *   requestorOwnsResource: (req) => {
+   *     const requestedUserId = req.params.uid;
+   *     const userId = dataManager.getAuthenticatedUserId(req);
+   *     return userId === requestedUserId;
    *   }
    * }
    * ```

@@ -13,11 +13,10 @@ export class ApiXRedisStore implements ApiXCache {
   /**
    * Create an instance of a Redis cache.
    * @param url The URL for the redis cache. Defaults to `redis://localhost:6379`.
-   * @param username An optional username (if protected).
    * @param password An optional password (if protected).
    */
-  constructor(url = 'redis://localhost:6379', username?: string, password?: string) {
-    this.client = createClient({ url: url, username, password });
+  constructor(url = 'redis://localhost:6379', password?: string) {
+    this.client = createClient({ url: url, password });
   }
 
   /**
