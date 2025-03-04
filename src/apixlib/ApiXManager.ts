@@ -3,6 +3,11 @@ import {
   ApiXConfigKey
 } from './ApiXConfig';
 import {
+  MetricManager,
+  MetricManagerOptions,
+  MetricTags
+} from './common/MetricManager'
+import {
   Request,
   Response
 } from 'express';
@@ -16,11 +21,11 @@ import { ApiXInputUrlQueryParameterProcessor } from './common/methods/ApiXInputU
 import { ApiXMethod } from './common/methods/ApiXMethod';
 import { ApiXMethodCharacteristic } from './common/methods/ApiXMethodCharacteristic';
 import { ApiXRequestInputSchema } from './common/methods/ApiXRequestInputSchema';
+import { Logger } from './common/Logger';
 import { apiXRequest } from './common/ApiXRequest';
 import bodyParser from 'body-parser';
 import { createHmac } from 'crypto';
 import express from 'express';
-import { Logger } from './common/Logger';
 import { makeApiXErrorResponse } from './common/utils/makeApiXErrorResponse';
 import path from 'path';
 
@@ -28,6 +33,23 @@ import path from 'path';
  * Type used to define an express handler as used in API-X.
  */
 type ExpressHandler = (req: Request, res: Response) => Promise<void>;
+
+enum MetricName {
+  SuccessfulRequest = 'SuccessfulRequest',
+  RejectedRequest = 'rejectedRequest',
+  HttpStatusCode = 'httpStatusCode',
+  RequestTime = 'requestTime'
+}
+
+enum RequestRejectionReason {
+  UnauthorizedApp = 'UnauthorizedApp',
+  MissingRequiredHeaders = 'MissingRequiredHeaders',
+  InvalidRequest = 'InvalidRequest',
+  UrlParametersVerificationError = 'UrlParametersVerificationError',
+  MissingRequiredJsonBody = 'MissingRequiredJsonBody',
+  InvalidJsonBody = 'InvalidJsonBody',
+  UnauthorizedRequest = 'UnauthorizedRequest'
+}
 
 /**
  * A manager class that handles incoming connections and routing.
@@ -46,6 +68,8 @@ export class ApiXManager {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private registeredMethods: Record<string, ApiXMethod<any, any>>;
   private logger?: Logger;
+  private metricManager?: MetricManager;
+  private metricManagerOptions?: MetricManagerOptions;
 
   /**
    * A Boolean value that determines whether developer mode is enabled.
@@ -115,9 +139,19 @@ export class ApiXManager {
     this.app.listen(port, host, () => {
       self.logger?.info(`Listening on port ${host}:${port}`);
       if (self.developerModeEnabled) {
-        self.logger?.warn(`\x1b[33mWarning: Developer Mode is enabled which decreases security. Make sure this is disabled in a production environment.\x1b[0m`);
+        self.logger?.warn(`Developer Mode is enabled which decreases security. Make sure this is disabled in a production environment.`);
       }
     });
+  }
+
+  /**
+   * Sets a metric manager for metric emit.
+   * @param {MetricManager} manager The metric manager object.
+   * @param {MetricManagerOptions} options The options when emitting metrics.
+   */
+  public setMetricManager(manager: MetricManager, options?: MetricManagerOptions) {
+    this.metricManager = manager;
+    this.metricManagerOptions = options;
   }
 
   /**
@@ -146,8 +180,17 @@ export class ApiXManager {
     const self = this;
     const methodWrappedHandler: ExpressHandler = async (req: Request, res: Response) => {
       // Get and verify all implicitly required queries
+      const startTime = Date.now();
       if (!self.verifyHeadersInRequest(req)) {
         res.status(400).send(makeApiXErrorResponse(ApiXErrorResponseMessage.MissingRequiredHeaders));
+        this.emitStatusMetric(400, appMethod);
+        this.emitMetric(
+          MetricName.RejectedRequest, 1,
+          {
+            reason: RequestRejectionReason.MissingRequiredHeaders
+          },
+          appMethod
+        );
         return;
       }
 
@@ -155,11 +198,27 @@ export class ApiXManager {
 
       if (!this.developerModeEnabled && !(await self.verifyApp(apiKey ?? ''))) {
         res.status(401).send(makeApiXErrorResponse(ApiXErrorResponseMessage.UnauthorizedApp));
+        this.emitStatusMetric(401, appMethod);
+        this.emitMetric(
+          MetricName.RejectedRequest, 1,
+          {
+            reason: RequestRejectionReason.UnauthorizedApp
+          },
+          appMethod
+        );
         return;
       }
 
       if (!this.developerModeEnabled && !(await self.verifyRequest(req))) {
         res.status(401).send(makeApiXErrorResponse(ApiXErrorResponseMessage.InvalidRequest));
+        this.emitStatusMetric(401, appMethod);
+        this.emitMetric(
+          MetricName.RejectedRequest, 1,
+          {
+            reason: RequestRejectionReason.InvalidRequest
+          },
+          appMethod
+        );
         return;
       }
 
@@ -174,9 +233,18 @@ export class ApiXManager {
         } catch (error) {
           if (error instanceof Error) {
             res.status(400).send(makeApiXErrorResponse(error.message));
+            this.emitStatusMetric(400, appMethod);
           } else {
-            res.status(400).send(ApiXErrorResponseMessage.UnknownError)
+            res.status(400).send(ApiXErrorResponseMessage.UnknownError);
+            this.emitStatusMetric(400, appMethod);
           }
+          this.emitMetric(
+            MetricName.RejectedRequest, 1,
+            {
+              reason: RequestRejectionReason.UrlParametersVerificationError
+            },
+            appMethod
+          );
           return;
         }
       }
@@ -185,6 +253,14 @@ export class ApiXManager {
 
       if (jsonBodyRequired && (!req.body || Object.keys(req.body).length === 0)) {
         res.status(400).send(makeApiXErrorResponse(ApiXErrorResponseMessage.MissingJsonBody));
+        this.emitStatusMetric(400, appMethod);
+        this.emitMetric(
+          MetricName.RejectedRequest, 1,
+          {
+            reason: RequestRejectionReason.MissingRequiredJsonBody
+          },
+          appMethod
+        );
         return;
       }
 
@@ -193,6 +269,14 @@ export class ApiXManager {
         && Object.keys(req.body).length > 0
         && !appMethod.jsonBodyValidator.isValid(req.body)) {
         res.status(400).send(makeApiXErrorResponse(ApiXErrorResponseMessage.InvalidJsonBody));
+        this.emitStatusMetric(400, appMethod);
+        this.emitMetric(
+          MetricName.RejectedRequest, 1,
+          {
+            reason: RequestRejectionReason.InvalidJsonBody
+          },
+          appMethod
+        );
         return;
       }
 
@@ -213,6 +297,14 @@ export class ApiXManager {
       if (!self.verifyRequestAuthorization(appMethod, accessLevel)) {
         this.logger?.warn(`Attempted access to resource without authorization.`);
         res.status(401).send(makeApiXErrorResponse(ApiXErrorResponseMessage.UnauthorizedRequest));
+        this.emitStatusMetric(401, appMethod);
+        this.emitMetric(
+          MetricName.RejectedRequest, 1,
+          {
+            reason: RequestRejectionReason.UnauthorizedRequest
+          },
+          appMethod
+        );
         return;
       }
 
@@ -223,7 +315,23 @@ export class ApiXManager {
         jsonBody
       );
       const response = await appMethod.requestHandler(request, res);
-      res.status(response.status ?? 200).send(response.data);
+      const status = response.status ?? 200;
+      res.status(status).send(response.data);
+
+      const elapsedTime = Date.now() - startTime;
+      this.emitStatusMetric(status, appMethod);
+      this.emitMetric(
+        MetricName.SuccessfulRequest,
+        status < 400 ? 1 : 0,
+        {},
+        appMethod
+      );
+      this.emitMetric(
+        MetricName.RequestTime,
+        elapsedTime,
+        { unit: 'ms' },
+        appMethod
+      );
     };
 
     this.registerHandlerForAppMethod(methodWrappedHandler, appMethod, endpoint);
@@ -485,5 +593,58 @@ export class ApiXManager {
   ): boolean {
     return appMethod.characteristics.has(ApiXMethodCharacteristic.PrivateOwnedData)
         || appMethod.characteristics.has(ApiXMethodCharacteristic.PublicOwnedData);
+  }
+
+  /**
+   * Emits a count metric.
+   * @param name Metric name.
+   * @param value Value to emit.
+   * @param tags Tags / dimensions to emit with the metric.
+   * @param method The API-X method emitting this metric.
+   */
+  private emitMetric<
+    QuerySchema extends ApiXRequestInputSchema,
+    BodySchema extends ApiXRequestInputSchema
+  >(
+    name: string,
+    value: number,
+    tags: MetricTags,
+    method: ApiXMethod<QuerySchema, BodySchema>) {
+    const finalTags = { 
+      ...tags,
+      ...(this.metricManagerOptions?.tags ?? {}),
+      endpoint: this.endpointForMethod(method),
+      httpMethod: method.httpMethod || 'GET'
+    };
+    this.metricManager
+      ?.emit(`${this.metricManagerOptions?.namePrefix ?? ''}${name}`, value, finalTags);
+  }
+
+  /**
+   * Emits a status metric.
+   * @param statusCode The HTTP status code.
+   * @param method The API-X method emitting this metric.
+   */
+  private emitStatusMetric<
+    QuerySchema extends ApiXRequestInputSchema,
+    BodySchema extends ApiXRequestInputSchema
+  >(statusCode: number, method: ApiXMethod<QuerySchema, BodySchema>) {
+    let statusRange: string;
+
+    if (statusCode < 300) {
+      statusRange = '200x';
+    } else if (statusCode < 400) {
+      statusRange = '300x';
+    } else if (statusCode < 500) {
+      statusRange = '400x';
+    } else {
+      statusRange = '500x';
+    }
+
+    const tags = {
+      status: statusRange
+    };
+
+    this.emitMetric(MetricName.HttpStatusCode, 1, tags, method);
   }
 }

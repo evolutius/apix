@@ -2,7 +2,7 @@
 /**
  * An interface for a logger.
  * 
- * @category Logging Server Info
+ * @category Logging & Operations
  */
 export interface Logger {
   /**

@@ -47,9 +47,14 @@ export { ApiXConfig } from './apixlib/ApiXConfig';
 export { ApiXManager } from './apixlib/ApiXManager';
 
 /**
- * Logging
+ * Logging & Metrics
  */
 export { Logger } from './apixlib/common/Logger';
+export {
+  MetricManager,
+  MetricManagerOptions,
+  MetricTags
+} from './apixlib/common/MetricManager'
 
 import { makeApiXErrorResponse } from './apixlib/common/utils/makeApiXErrorResponse';
 
