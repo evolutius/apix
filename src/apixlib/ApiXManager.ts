@@ -36,9 +36,9 @@ type ExpressHandler = (req: Request, res: Response) => Promise<void>;
 
 enum MetricName {
   SuccessfulRequest = 'SuccessfulRequest',
-  RejectedRequest = 'rejectedRequest',
-  HttpStatusCode = 'httpStatusCode',
-  RequestTime = 'requestTime'
+  RejectedRequest = 'RejectedRequest',
+  HttpStatusCode = 'HttpStatusCode',
+  RequestTime = 'RequestTime'
 }
 
 enum RequestRejectionReason {

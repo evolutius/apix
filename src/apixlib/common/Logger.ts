@@ -3,6 +3,7 @@
  * An interface for a logger.
  * 
  * @category Logging & Operations
+ * @document ../../../documentation/Measuring_Quality_With_Logging_and_Metrics.md
  */
 export interface Logger {
   /**

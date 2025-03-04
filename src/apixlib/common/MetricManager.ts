@@ -3,6 +3,7 @@
  * Tags to add dimensionality/context to metrics.
  * 
  * @category Logging & Operations
+ * @document ../../../documentation/Measuring_Quality_With_Logging_and_Metrics.md
  */
 export type MetricTags = Record<string, string | number>;
 
@@ -10,6 +11,7 @@ export type MetricTags = Record<string, string | number>;
  * A manager to emit metrics.
  * 
  * @category Logging & Operations
+ * @document ../../../documentation/Measuring_Quality_With_Logging_and_Metrics.md
  */
 export interface MetricManager {
   /**
@@ -25,6 +27,7 @@ export interface MetricManager {
  * The options to set in the API-X Manager for a `MetricManager`.
  * 
  * @category Logging & Operations
+ * @document ../../../documentation/Measuring_Quality_With_Logging_and_Metrics.md
  */
 export interface MetricManagerOptions {
   /**
