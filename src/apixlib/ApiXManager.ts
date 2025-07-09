@@ -3,6 +3,10 @@ import {
   ApiXConfigKey
 } from './ApiXConfig';
 import {
+  ApiXResponseErrorId,
+  errorMessages
+} from './common/ApiXError';
+import {
   MetricManager,
   MetricManagerOptions,
   MetricTags
@@ -15,9 +19,9 @@ import { ApiXAccessLevel } from './common/ApiXAccessLevel';
 import { ApiXAccessLevelEvaluator } from './common/ApiXAccessLevelEvaluator';
 import { ApiXCache } from './common/ApiXCache';
 import { ApiXDataManager } from './ApiXDataManager';
-import { ApiXErrorResponseMessage } from './common/ApiXErrorResponseMessage';
 import { ApiXHttpHeaders } from './common/ApiXHttpHeaders';
 import { ApiXInputUrlQueryParameterProcessor } from './common/methods/ApiXInputUrlQueryParameterProcessor';
+import { ApiXJsonDictionary } from './common/ApiXJsonDictionary';
 import { ApiXMethod } from './common/methods/ApiXMethod';
 import { ApiXMethodCharacteristic } from './common/methods/ApiXMethodCharacteristic';
 import { ApiXRequestInputSchema } from './common/methods/ApiXRequestInputSchema';
@@ -115,7 +119,7 @@ export class ApiXManager {
         next();
       } else {
         // Request was not made over HTTPS
-        res.status(403).send(makeApiXErrorResponse(ApiXErrorResponseMessage.InsecureProtocol));
+        res.status(403).send(this.makeErrorResponse('insecureProtocol'));
       }
     });
   }
@@ -182,7 +186,7 @@ export class ApiXManager {
       // Get and verify all implicitly required queries
       const startTime = Date.now();
       if (!self.verifyHeadersInRequest(req)) {
-        res.status(400).send(makeApiXErrorResponse(ApiXErrorResponseMessage.MissingRequiredHeaders));
+        res.status(400).send(this.makeErrorResponse('missingRequiredHeaders'));
         this.emitStatusMetric(400, appMethod);
         this.emitMetric(
           MetricName.RejectedRequest, 1,
@@ -197,7 +201,7 @@ export class ApiXManager {
       const apiKey = req.header(ApiXHttpHeaders.ApiKey) as string;
 
       if (!this.developerModeEnabled && !(await self.verifyApp(apiKey ?? ''))) {
-        res.status(401).send(makeApiXErrorResponse(ApiXErrorResponseMessage.UnauthorizedApp));
+        res.status(401).send(this.makeErrorResponse('unauthorizedApp'));
         this.emitStatusMetric(401, appMethod);
         this.emitMetric(
           MetricName.RejectedRequest, 1,
@@ -210,7 +214,7 @@ export class ApiXManager {
       }
 
       if (!this.developerModeEnabled && !(await self.verifyRequest(req))) {
-        res.status(401).send(makeApiXErrorResponse(ApiXErrorResponseMessage.InvalidRequest));
+        res.status(401).send(this.makeErrorResponse('invalidRequest'));
         this.emitStatusMetric(401, appMethod);
         this.emitMetric(
           MetricName.RejectedRequest, 1,
@@ -232,10 +236,10 @@ export class ApiXManager {
           );
         } catch (error) {
           if (error instanceof Error) {
-            res.status(400).send(makeApiXErrorResponse(error.message));
+            res.status(400).send(makeApiXErrorResponse('invalidRequestParameters', error.message));
             this.emitStatusMetric(400, appMethod);
           } else {
-            res.status(400).send(ApiXErrorResponseMessage.UnknownError);
+            res.status(400).send(this.makeErrorResponse('unknownError'));
             this.emitStatusMetric(400, appMethod);
           }
           this.emitMetric(
@@ -252,7 +256,7 @@ export class ApiXManager {
       const jsonBodyRequired = appMethod.jsonBodyRequired ?? false;
 
       if (jsonBodyRequired && (!req.body || Object.keys(req.body).length === 0)) {
-        res.status(400).send(makeApiXErrorResponse(ApiXErrorResponseMessage.MissingJsonBody));
+        res.status(400).send(this.makeErrorResponse('missingJsonBody'));
         this.emitStatusMetric(400, appMethod);
         this.emitMetric(
           MetricName.RejectedRequest, 1,
@@ -268,7 +272,7 @@ export class ApiXManager {
         && req.body
         && Object.keys(req.body).length > 0
         && !appMethod.jsonBodyValidator.isValid(req.body)) {
-        res.status(400).send(makeApiXErrorResponse(ApiXErrorResponseMessage.InvalidJsonBody));
+        res.status(400).send(this.makeErrorResponse('invalidJsonBody'));
         this.emitStatusMetric(400, appMethod);
         this.emitMetric(
           MetricName.RejectedRequest, 1,
@@ -296,7 +300,7 @@ export class ApiXManager {
 
       if (!self.verifyRequestAuthorization(appMethod, accessLevel)) {
         this.logger?.warn(`Attempted access to resource without authorization.`);
-        res.status(401).send(makeApiXErrorResponse(ApiXErrorResponseMessage.UnauthorizedRequest));
+        res.status(401).send(this.makeErrorResponse('unauthorizedRequest'));
         this.emitStatusMetric(401, appMethod);
         this.emitMetric(
           MetricName.RejectedRequest, 1,
@@ -646,5 +650,14 @@ export class ApiXManager {
     };
 
     this.emitMetric(MetricName.HttpStatusCode, 1, tags, method);
+  }
+
+  /**
+   * Creates an error response for the given error ID.
+   * @param {ApiXResponseErrorId} id The error ID.
+   * @returns {ApiXJsonDictionary<unknown>} The error response.
+   */
+  private makeErrorResponse(id: ApiXResponseErrorId): ApiXJsonDictionary<unknown> {
+    return makeApiXErrorResponse(id, errorMessages[id]);
   }
 }
