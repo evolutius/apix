@@ -4,7 +4,6 @@ import { ApiXAccessLevel } from '../common/ApiXAccessLevel';
 import { ApiXAccessLevelEvaluator } from '../common/ApiXAccessLevelEvaluator';
 import { ApiXCache } from '../common/ApiXCache';
 import { ApiXDataManager } from '../ApiXDataManager';
-import { ApiXErrorResponseMessage } from '../common/ApiXErrorResponseMessage';
 import { ApiXHttpBodyValidator } from '../common/methods/ApiXHttpBodyValidator';
 import { ApiXHttpHeaders } from '../common/ApiXHttpHeaders';
 import { ApiXManager } from '../ApiXManager';
@@ -16,6 +15,7 @@ import { ApiXUrlQueryParameter } from '../common/methods/ApiXUrlQueryParameter';
 import { ApiXUrlQueryParameterProcessor } from '../common/methods/ApiXUrlQueryParameterProcessor';
 import { ApiXUrlQueryParameterValidator } from '../common/methods/ApiXUrlQueryParameterValidator';
 import { Express } from 'express';
+import { errorMessages } from '../common/ApiXError';
 import request from 'supertest';
 
 describe('ApiXManager', () => {
@@ -111,7 +111,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(403);
     expect(response.body).toEqual({
       success: false,
-      message: ApiXErrorResponseMessage.InsecureProtocol
+      message: errorMessages.insecureProtocol,
+      error: {
+        id: 'insecureProtocol',
+        message: errorMessages.insecureProtocol
+      }
     });
   });
 
@@ -135,7 +139,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
       success: false,
-      message: ApiXErrorResponseMessage.MissingRequiredHeaders
+      message: errorMessages.missingRequiredHeaders,
+      error: {
+        id: 'missingRequiredHeaders',
+        message: errorMessages.missingRequiredHeaders
+      }
     });
   });
 
@@ -161,7 +169,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
       success: false,
-      message: ApiXErrorResponseMessage.MissingRequiredHeaders
+      message: errorMessages.missingRequiredHeaders,
+      error: {
+        id: 'missingRequiredHeaders',
+        message: errorMessages.missingRequiredHeaders
+      }
     });
   });
 
@@ -189,7 +201,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
       success: false,
-      message: ApiXErrorResponseMessage.UnauthorizedApp
+      message: errorMessages.unauthorizedApp,
+      error: {
+        id: 'unauthorizedApp',
+        message: errorMessages.unauthorizedApp
+      }
     });
   });
 
@@ -222,7 +238,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
       success: false,
-      message: ApiXErrorResponseMessage.InvalidRequest
+      message: errorMessages.invalidRequest,
+      error: {
+        id: 'invalidRequest',
+        message: errorMessages.invalidRequest
+      }
     });
   });
 
@@ -248,7 +268,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
       success: false,
-      message: ApiXErrorResponseMessage.InvalidRequest
+      message: errorMessages.invalidRequest,
+      error: {
+        id: 'invalidRequest',
+        message: errorMessages.invalidRequest
+      }
     });
   });
 
@@ -284,7 +308,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
       success: false,
-      message: ApiXErrorResponseMessage.UnauthorizedRequest
+      message: errorMessages.unauthorizedRequest,
+      error: {
+        id: 'unauthorizedRequest',
+        message: errorMessages.unauthorizedRequest
+      }
     });
   });
 
@@ -317,7 +345,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
       success: false,
-      message: 'Missing required parameter param2'
+      message: 'Missing required parameter param2',
+      error: {
+        id: 'invalidRequestParameters',
+        message: 'Missing required parameter param2'
+      }
     });
   });
 
@@ -456,7 +488,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ 
       success: false,
-      message: 'This request is not valid.'
+      message: errorMessages.invalidRequest,
+      error: {
+        id: 'invalidRequest',
+        message: errorMessages.invalidRequest
+      }
     });
   });
 
@@ -493,7 +529,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
       success: false,
-      message: 'Parameter param1 has an invalid value: here'
+      message: 'Parameter param1 has an invalid value: here',
+      error: {
+        id: 'invalidRequestParameters',
+        message: 'Parameter param1 has an invalid value: here'
+      }
     });
   });
 
@@ -590,7 +630,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
       success: false,
-      message: ApiXErrorResponseMessage.InvalidRequest
+      message: errorMessages.invalidRequest,
+      error: {
+        id: 'invalidRequest',
+        message: errorMessages.invalidRequest
+      }
     });
   });
 
@@ -630,7 +674,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
       success: false,
-      message: 'Invalid request. Missing required HTTP body.'
+      message: errorMessages.missingJsonBody,
+      error: {
+        id: 'missingJsonBody',
+        message: errorMessages.missingJsonBody
+      }
     });
   });
 
@@ -732,7 +780,11 @@ describe('ApiXManager', () => {
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
       success: false,
-      message: 'Invalid request. Invalid HTTP body.'
+      message: errorMessages.invalidJsonBody,
+      error: {
+        id: 'invalidJsonBody',
+        message: errorMessages.invalidJsonBody
+      }
     });
   });
 
