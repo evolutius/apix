@@ -29,10 +29,10 @@ For simpler setups or development purposes, you can run Redis on the same host w
      sudo systemctl restart redis
      ```
 3. **Connecting API-X to Redis**:
-   - Use the following constructor for the `ApiXRedisStore` to connect:
+   - Use the following constructor for the `RedisStore` to connect:
      ```ts
      /// Defaults to 'redis://localhost:6379'
-     const redisStore = new ApiXRedisStore();
+     const redisStore = new RedisStore();
      ```
 
 ### 2. Deploying Redis on a Different Host
@@ -61,9 +61,9 @@ To scale API-X and Redis independently, you can run Redis on a separate host. Th
      sudo ufw allow from <apix_server_ip> to any port 6379
      ```
 4. **Connecting API-X to Redis**:
-   - Use the following constructor for `ApiXRedisStore` to connect to the remote Redis instance:
+   - Use the following constructor for `RedisStore` to connect to the remote Redis instance:
      ```ts
-     const redisStore = new ApiXRedisStore('redis://<redis_host>:6379', 'your_redis_password');
+     const redisStore = new RedisStore('redis://<redis_host>:6379', 'your_redis_password');
      ```
 
 ### 3. Deploying Redis with Docker Containers
@@ -127,9 +127,9 @@ For high availability and load balancing, you can set up a Redis cluster. A Redi
      ```
 
 4. **Connect API-X to the Cluster**:
-   - When using a Redis cluster, provide the cluster URL to the `ApiXRedisStore`:
+   - When using a Redis cluster, provide the cluster URL to the `RedisStore`:
      ```ts
-     const redisStore = new ApiXRedisStore('redis://<cluster_ip>:6379', 'your_redis_password');
+     const redisStore = new RedisStore('redis://<cluster_ip>:6379', 'your_redis_password');
      ```
 
 ## Conclusion

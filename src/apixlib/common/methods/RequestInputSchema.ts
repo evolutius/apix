@@ -9,14 +9,14 @@
  * ```ts
  * // An interface that represents the JSON Body schema
  * // for a login method.
- * interface UserLoginJsonSchema extends ApiXRequestInputSchema {
+ * interface UserLoginJsonSchema extends RequestInputSchema {
  *   readonly username: string;
  *   readonly password: string;
  * }
  * 
  * // An interface that represents the defined URL query parameters
  * // in an endpoint that retrieves books.
- * interface FilterBooksUrlQueryParameters extens ApiXRequestInputSchema {
+ * interface FilterBooksUrlQueryParameters extends RequestInputSchema {
  *   readonly keywords: string; // required, must not be undefined
  *   readonly tags?: ReadonlyArray<string>;  // additional optional tags
  *   readonly authorName?: string;  // additional optional parameter
@@ -26,7 +26,7 @@
  * 
  * @category Working with HTTP Endpoints
  */
-export interface ApiXRequestInputSchema {
+export interface RequestInputSchema {
   /**
    * @hidden
    */

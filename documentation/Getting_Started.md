@@ -4,7 +4,7 @@ category: Developer Documentation
 ---
 # Getting Started
 
-Welcome to **API-X**! This guide will help you get up and running with API-X, a Node.js TypeScript package for building secure and scalable RESTful APIs quickly. API-X is built on top of [Express](https://expressjs.com/) and offers additional security and ease-of-use features, making it the perfect choice for secure API development.
+Welcome to **API-X**! This guide will help you get up and running with API-X, a Node.js TypeScript package for building secure and scalable RESTful APIs quickly. API-X is built on top of [Express](https://expressjs.com/) and offers additional security and ease-of-use features, making it the perfect choice for fast secure API development.
 
 ## Prerequisites
 
@@ -12,7 +12,7 @@ Before you start, ensure you have the following installed:
 
 - [Node.js](https://nodejs.org/) (v18 or higher is recommended)
 - [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/) for dependency management
-- [TypeScript](https://www.typescriptlang.org/) (v4 or higher)
+- [TypeScript](https://www.typescriptlang.org/) (v5 or higher recommended)
 
 To verify if you have Node.js and npm installed, run the following commands:
 
@@ -76,23 +76,53 @@ Now, let's create a simple server using API-X. Create a new file named `server.t
 
 ```typescript
 import {
-  ApiXManager,
-  ApiXMethod,
-  ApiXMethodCharacteristic,
-  ApiXDataManager,
-  ApiXAccessLevelEvaluator,
-  ApiXRedisStore,
+  AppManager,
+  EndpointMethod,
+  MethodCharacteristic,
+  DataManager,
+  AccessLevelEvaluator,
+  RedisStore,
   ApiXConfig,
-  ApiXAccessLevel,
-  ApiXRequestInputSchema
+  AccessLevel,
+  RequestInputSchema,
+  Request,
+  Response,
+
+  EndpointGenerator,
+  Route,
+  PublicResource
 } from '@evlt/apix';
 
-import { Request } from 'express';
-  
-const helloWorldMethod: ApiXMethod = {
+import {
+  Request as ExpressRequest,
+  Response as ExpressResponse
+} from 'express';
+
+/**
+ * Declarative endpoint definition. Makes it easier to define multiple endpoint
+ * under the same entity (e.g. all user methods under a single class, and with
+ * object instance lifecycles for resources.)
+ */
+@EndpointGenerator('hello')
+class HelloWorld {
+
+  @Route('world')
+  @PublicResource()
+  public helloWorld(req: Request, res: ExpressResponse): Response {
+    const data = {
+      success: true,
+      message: 'Hello, world!'
+    };
+    return { data }; // defaults to status 200. To change, set the `status` property.
+    // return { status: 200, data };
+  }
+}
+
+/// Non-declarative method definition - Only use for single method or legacy pre-TS v5.
+const helloWorldMethod: EndpointMethod = {
   entity: 'hello',
   method: 'world',
-  characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+  characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
   requestHandler: (req, res) => {
     const data = {
       success: true,
@@ -103,27 +133,27 @@ const helloWorldMethod: ApiXMethod = {
   }
 }
 
-class DataManager implements ApiXDataManager {
+class MyDataManager implements DataManager {
   getAppKeyForApiKey(apiKey: string): string | null {
     /// single app has access
     return apiKey === process.env.API_KEY ? process.env.APP_KEY! : null;
   }
 }
 
-class AccessLevelEvaluator extends ApiXAccessLevelEvaluator {
+class MyAccessLevelEvaluator extends AccessLevelEvaluator {
   // Can be used to implement additional methods such as `isAuthenticatedRequestor`
   // when working with authentication.
 }
 
 const config = new ApiXConfig();
 
-/// If using redis, use ApiX implementation. Otherwise you can implement
-/// you own by implementing the `ApiXCache` interface.
-const cache = new ApiXRedisStore(/* redis server, if not local */);
+/// If using Redis, use the provided RedisStore. Otherwise implement
+/// your own by implementing the `Cache` interface.
+const cache = new RedisStore(/* redis server, if not local */);
 
-const manager = new ApiXManager(
-  new AccessLevelEvaluator(),
-  new DataManager(),
+const manager = new AppManager(
+  new MyAccessLevelEvaluator(),
+  new MyDataManager(),
   config,
   cache,
   console // during development, log to the console
@@ -133,7 +163,10 @@ const manager = new ApiXManager(
 /// Disables some security features for easy testing
 manager.developerModeEnabled = true;
 
-manager.registerAppMethod(helloWorldMethod);
+manager.registerEndpointGenerator(new HelloWorld());
+
+/// Not registering legacy method.
+// manager.registerAppMethod(helloWorldMethod);
 
 /// Run the server
 manager.start();

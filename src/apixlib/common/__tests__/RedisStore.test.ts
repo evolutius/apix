@@ -1,4 +1,4 @@
-import { ApiXRedisStore } from '../ApiXRedisStore';
+import { RedisStore } from '../RedisStore';
 
 const map: Map<string, string> = new Map();
 
@@ -22,9 +22,9 @@ jest.mock('redis', () => ({
   })
 }));
 
-describe('ApiXRedisStore', () => {
+describe('RedisStore', () => {
   test('values are correctly stored and retrievable from cache', async () => {
-    const cache = new ApiXRedisStore();
+    const cache = new RedisStore();
     const value = 9504;
     const key = "9504";
     expect(await cache.valueForKey(key)).toBeUndefined();
@@ -33,13 +33,13 @@ describe('ApiXRedisStore', () => {
   });
 
   test('values not stored in the cache are undefined', async () => {
-    const cache = new ApiXRedisStore();
+    const cache = new RedisStore();
     const key = "95042";
     expect(await cache.valueForKey(key)).toBeUndefined();
   });
 
   test('values removed from the cache are undefined', async () => {
-    const cache = new ApiXRedisStore();
+    const cache = new RedisStore();
     const key = "9505";
     const value = 9505;
     expect(await cache.valueForKey(key)).toBeUndefined();

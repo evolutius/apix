@@ -11,21 +11,21 @@ Fixed access levels are defined for each endpoint based on the data or operation
 
 ## Levels
 
-API-X provides clear guidance on how access levels and characteristics should be assigned to control access to resources.
+API-X provides clear guidance on how access levels and characteristics should be assigned to control access to resources. When defining methods, you will use decorators corresponding to these definitions to determine what kind of data your endpoint can deliver or interacts with.
 
-### Setting Endpoint Characteristics
+### Setting Endpoint Resource Definitions
 
-API-X endpoints use characteristics to determine the minimum access levels required to access them. There are several characteristics that can be assigned to endpoints:
+| Resource Definition   | Description                                                                                                                                         | Minimum Required Access Level |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| InternalResource      | Endpoints for superusers, administrators, server owners. Always requires authentication.                                                            | **Admin**                     |
+| ModerativeResource    | Endpoints for content editors and moderators, such as banning users, posts, etc. Always requires authentication.                                    | **Moderator**                 |
+| InstitutionalResource | Endpoints for a private institution and its employees. Always requires authentication.                                                              | **Manager**                   |
+| ExclusiveResource     | Endpoints available to select groups or individuals with special privileges, such as beta testers. Always requires authentication.                  | **Privileged Requestor**      |
+| PrivateResource       | Endpoints that process or serve owned data, e.g., data for specific users. Always requires authentication.                                          | **Resource Owner**            |
+| PublicResource + Auth | Endpoints that can process or serve data owned by an entity but meant to be publicly available, e.g., a user's username in a social media platform. | **Authenticated Requestor**   |
+| PublicResource - Auth | Endpoints that return data that isn't owned by any entity and is meant for public consumption by authorized requestors.                             | **Public Requestor**          |
 
-| Characteristic      | Description                                                                                                                                         | Resulting Access Level      |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| Internal            | Endpoints for superusers, administrators, server owners.                                                                                            | **Admin**                   |
-| Moderative          | Endpoints for content editors and moderators, such as banning users, posts, etc.                                                                    | **Moderator**               |
-| Institutional       | Endpoints for a private institution and its employees.                                                                                              | **Manager**                 |
-| Special             | Endpoints available to select groups or individuals with special privileges, such as beta testers.                                                  | **Privileged Requestor**    |
-| Private Owned Data  | Endpoints that process or serve owned data, e.g., data for specific users.                                                                          | **Resource Owner**          |
-| Public Owned Data   | Endpoints that can process or serve data owned by an entity but meant to be publicly available, e.g., a user's username in a social media platform. | **Authenticated Requestor** |
-| Public Unowned Data | Endpoints that return data that isn't owned by any entity and is meant for public consumption by authorized requestors.                             | **Public Requestor**        |
+Internally, these resource definitions are mapped to characteristics. To learn more, see the appendix.
 
 *Note: It is the responsibility of each endpoint handler to fulfill the promise of its characteristics. See example from the next section for details.*
 
@@ -48,26 +48,40 @@ API-X determines the access level a request should have based on specific condit
 
 Below is an example endpoint that allows you to retrieve data for a specific user in a social media platform-like service. This endpoint can return data deemed public but owned by a user, such as a username, profile photo, etc., or data that is private and owned by the user, such as a phone number, ID, etc.
 
-For this reason, this API-X endpoint has two characteristics:
+For this reason, this API-X endpoint has two resource types:
 
-1. `PrivateOwnedData`
-2. `PublicOwnedData`
+1. `PrivateResource`
+2. `PublicResource` (with authentication - in this example we're not allowing any requests from non-authenticated users)
 
 API-X will determine that a minimum access level of \`AuthenticatedRequestor\` is then required to access it, but it's the request handler's responsibility to fulfill its promise to deliver Resource Owner data (privately owned data) if the requestor has enough access.
 
 ```typescript
+import {
+  EndpointGenerator,
+  Route,
+  PrivateResource,
+  PublicResource,
+  AuthRequired,
+  Request,
+  Response,
+  OwnerEvaluator
+} from '@evlt/apix';
+
+import { MyDataManager } from '..';
+
 /**
  * This endpoint returns data about specific users.
  */
-const endpoint: ApiXMethod = {
-  entity: 'users',
-  method: ':id',
-  httpMethod: 'GET',
-  characteristics: new Set([
-    ApiXMethodCharacteristic.PrivateOwnedData,
-    ApiXMethodCharacteristic.PublicOwnedData,
-  ]),
-  requestHandler: async (request, response) => {
+@EndpointGenerator('users')
+class Users {
+
+  constructor(private dataManager: MyDataManager) {}
+
+  @Route(":id")
+  @PrivateResource()  // Can deliver private data owned by the user
+  @PublicResource()   // Can deliver public data
+  @AuthRequired()     // Public data will only be delivered to authenticated users
+  async getUser(request: Request, response: ExpressResponse): Promise<Response> {
     const userId = request.params.id;
     /// ... all input validation for user ID is done before this point ... ///
 
@@ -75,7 +89,7 @@ const endpoint: ApiXMethod = {
     /// let any requests without access reach the endpoint.
 
     /// However, we can now control the level of access.
-    if (request.accessLevel === ApiXAccessLevel.AuthenticatedRequestor) {
+    if (request.accessLevel === AccessLevel.AuthenticatedRequestor) {
       /// According to guidance, this access level should only provide access to public owned data,
       /// so here we only return the user's public data; examples include a username, profile photo, etc.
       const data = await getUserPublicData(userId);
@@ -92,54 +106,71 @@ const endpoint: ApiXMethod = {
       return { data };
     }
   }
-};
+
+  async getUserPublicData(id: string): Promise<PublicUser> {
+    ...
+  }
+
+  async getUserPrivateData(id: string): Promise<User> {
+    ...
+  }
+
+  @OwnerEvaluator()
+  async owns(request: Request): boolean {
+    /// answers whether the requestor owns the user data
+    /// e.g. implementation
+    const authenticatedUserId = this.dataManager.getAuthenticatedUserId();
+    const userId = request.params.id;  /// Assuming ID is coming in :id param
+    return userId === authenticatedUserId;  /// If authenticated user = requested user, then it is the owner.
+  }
+}
 ```
 
-## Using `ApiXAccessLevelEvaluator`
+## Using `AccessLevelEvaluator`
 
-To control access to your endpoints, you can now subclass `ApiXAccessLevelEvaluator`, which provides most of the evaluation logic for you. In most cases, you only need to implement `isAuthenticatedRequestor` for authentication and `isDeniedRequestor` for banning users or bots. The other methods, such as `isInternalRequestor`, are meant for more granular access control and are not needed for most APIs.
+To control access to your endpoints, you can now subclass `AccessLevelEvaluator`, which provides most of the evaluation logic for you. In most cases, you only need to implement `isAuthenticatedRequestor` for authentication and `isDeniedRequestor` for banning users or bots. The other methods, such as `isInternalRequestor`, are meant for more granular access control and are not needed for most APIs.
 
-The `ApiXAccessLevelEvaluator` class is designed to simplify access level evaluation by allowing you to customize behavior where necessary. Here is a list of methods that can be overridden:
+The `AccessLevelEvaluator` class is designed to simplify access level evaluation by allowing you to customize behavior where necessary. Here is a list of methods that can be overridden:
 
 - `isDeniedRequestor`: Determines if a requestor should be denied access (e.g., banned users or bots). This method should be implemented if you need to restrict access to specific users, such as those banned or identified as bots. It can also be used to invalidate sessions and authorization tokens.
 - `isAuthenticatedRequestor`: Determines if a requestor is authenticated. If dealing with user authentication, this method **must** be implemented; otherwise, it will be assumed that the requestor is **not** authenticated.
-- `isInternalRequestor`: Determines if a requestor is an internal user/admin. This method **must** be implemented if an `ApiXMethod` has the `Internal` characteristic; otherwise, it will be assumed that the requestor is **not** internal/admin.
-- `isModerativeRequestor`: Determines if a requestor is a moderator. This method **must** be implemented if an `ApiXMethod` has the `Moderative` characteristic; otherwise, it will be assumed that the requestor is **not** a moderator.
-- `isInstitutionalRequestor`: Determines if a requestor is an institutional user (e.g., manager or employee). This method **must** be implemented if an `ApiXMethod` has the `Institutional` characteristic; otherwise, it will be assumed that the requestor is **not** institutional.
-- `isPrivilegedRequestor`: Determines if a requestor is privileged (e.g., beta testers). This method **must** be implemented if an `ApiXMethod` has the `Special` characteristic; otherwise, it will be assumed that the requestor is **not** privileged.
+- `isInternalRequestor`: Determines if a requestor is an internal user/admin. This method **must** be implemented if an endpoint has the `Internal` characteristic; otherwise, it will be assumed that the requestor is **not** internal/admin.
+- `isModerativeRequestor`: Determines if a requestor is a moderator. This method **must** be implemented if an endpoint has the `Moderative` characteristic; otherwise, it will be assumed that the requestor is **not** a moderator.
+- `isInstitutionalRequestor`: Determines if a requestor is an institutional user (e.g., manager or employee). This method **must** be implemented if an endpoint has the `Institutional` characteristic; otherwise, it will be assumed that the requestor is **not** institutional.
+- `isPrivilegedRequestor`: Determines if a requestor is privileged (e.g., beta testers). This method **must** be implemented if an endpoint has the `Special` characteristic; otherwise, it will be assumed that the requestor is **not** privileged.
 
-The core `evaluate` method in `ApiXAccessLevelEvaluator` handles the majority of use cases by evaluating the characteristics of a method and the requestor's role, using the above methods as needed. You should only override `evaluate` if you have a very specific, non-standard access control requirement.
+The core `evaluate` method in `AccessLevelEvaluator` handles the majority of use cases by evaluating the characteristics of a method and the requestor's role, using the above methods as needed. You should only override `evaluate` if you have a very specific, non-standard access control requirement.
 
-The `ApiXAccessLevelEvaluator` class is designed to simplify access level evaluation by allowing you to customize behavior where necessary. You only need to implement specific methods such as:
+The `AccessLevelEvaluator` class is designed to simplify access level evaluation by allowing you to customize behavior where necessary. You only need to implement specific methods such as:
 
 - `isDeniedRequestor`: Determines if a requestor should be denied access (e.g., banned users or bots).
 - `isAuthenticatedRequestor`: Determines if a requestor is authenticated.
 - `isInternalRequestor`: Determines if a requestor is an internal user/admin.
 
-The core `evaluate` method in `ApiXAccessLevelEvaluator` handles the majority of use cases by evaluating the characteristics of a method and the requestor's role, using the above methods as needed. You should only override `evaluate` if you have a very specific, non-standard access control requirement.
+The core `evaluate` method in `AccessLevelEvaluator` handles the majority of use cases by evaluating the characteristics of a method and the requestor's role, using the above methods as needed. You should only override `evaluate` if you have a very specific, non-standard access control requirement.
 
-Here's an example of how to subclass `ApiXAccessLevelEvaluator` to define access control:
+Here's an example of how to subclass `AccessLevelEvaluator` to define access control:
 
 ```typescript
-class MyApiEvaluator extends ApiXAccessLevelEvaluator {
-  async isDeniedRequestor(req: ApiXRequest): Promise<boolean> {
+class MyApiEvaluator extends AccessLevelEvaluator {
+  async isDeniedRequestor(req: Request): Promise<boolean> {
     const user = await getRequestingUser(req);
     return user.isBlockListed;
   }
 
-  async isAuthenticatedRequestor(req: ApiXRequest): Promise<boolean> {
+  async isAuthenticatedRequestor(req: Request): Promise<boolean> {
     const user = await getRequestingUser(req);
     return user.isAuthenticated;
   }
 
   /// Optionally override `evaluate` for special cases
-  async evaluate(appMethod: ApiXMethod, req: ApiXRequest): Promise<ApiXAccessLevel> {
+  async evaluate(appMethod: EndpointMethod, req: Request): Promise<AccessLevel> {
     /// Use the base class's evaluation and customize where necessary
     const baseAccessLevel = await super.evaluate(appMethod, req);
     
     /// Add custom logic if needed
     if (someCustomCondition) {
-      return ApiXAccessLevel.PrivilegedRequestor;
+      return AccessLevel.PrivilegedRequestor;
     }
 
     return baseAccessLevel;
@@ -147,4 +178,22 @@ class MyApiEvaluator extends ApiXAccessLevelEvaluator {
 }
 ```
 
-By subclassing `ApiXAccessLevelEvaluator`, you can easily manage access levels without needing to rewrite the entire evaluation process. Implement only the specific methods you need, and let the core logic handle the rest.
+By subclassing `AccessLevelEvaluator`, you can easily manage access levels without needing to rewrite the entire evaluation process. Implement only the specific methods you need, and let the core logic handle the rest.
+
+## Appendix
+
+### Resource Definition to Characteristic Mapping
+
+Internally (or when manually defining `EndpointMethod` objects), API-X endpoints use characteristics to determine the minimum access levels required to access them. There are several characteristics that can be assigned to endpoints:
+
+| Characteristic      | Resource Definition Equivalent                      |
+| ------------------- | ----------------------------------------------------|
+| Internal            | InternalResource                                    |
+| Moderative          | ModerativeResource                                  |
+| Institutional       | InstitutionalResource                               |
+| Special             | ExclusiveResource                                   |
+| Private Owned Data  | PrivateResource                                     |
+| Public Owned Data   | PublicResource with **authentication required**     |
+| Public Unowned Data | PublicResource with **no authentication required**  |
+
+However, it is recommended to define endpoint declaratively with `@EndpointGenerator` and use the corresponding resource decorators.

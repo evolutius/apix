@@ -16,7 +16,7 @@
  * // transforms comma-separated strings such as `'mylist,of,values'` into
  * // readonly arrays such as `['mylist', 'of', 'values']`. The parameter
  * // name is always output in camelCase.
- * class CommaSeparatedListUrlQueryParameterProcessor implements ApiXUrlQueryParameterProcessor<ReadonlyArray<string>> {
+ * class CommaSeparatedListUrlQueryParameterProcessor implements UrlQueryParameterProcessor<ReadonlyArray<string>> {
  *   process(name: string, value: string): [string, ReadonlyArray<string>] {
  *     // any input here has already been pre-validated.
  *     return [this.snakeCaseToCamelCase(name), value.split(',')];
@@ -32,7 +32,7 @@
  * 
  * @category Working with HTTP Endpoints
  */
-export interface ApiXUrlQueryParameterProcessor<T> {
+export interface UrlQueryParameterProcessor<T> {
 
   /**
    * A method that processes a URL query parameter.
@@ -47,11 +47,11 @@ export interface ApiXUrlQueryParameterProcessor<T> {
  * A pass-through query parameter processor. All string values are simply
  * returned as string values.
  * 
- * @see {@link ApiXUrlQueryParameterProcessor}
+ * @see {@link UrlQueryParameterProcessor}
  * 
  * @category Working with HTTP Endpoints
  */
-export class ApiXUrlQueryParameterPassthroughProcessor implements ApiXUrlQueryParameterProcessor<string> {
+export class UrlQueryParameterPassthroughProcessor implements UrlQueryParameterProcessor<string> {
   process(name: string, value: string): [string, string] {
     return [name, value];
   }

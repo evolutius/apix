@@ -7,36 +7,38 @@ import {
   errorMessages
 } from './common/ApiXError';
 import {
+  Request as ExpressRequest,
+  Response as ExpressResponse
+} from 'express';
+import {
   MetricManager,
   MetricManagerOptions,
   MetricTags
 } from './common/MetricManager'
-import {
-  Request,
-  Response
-} from 'express';
-import { ApiXAccessLevel } from './common/ApiXAccessLevel';
-import { ApiXAccessLevelEvaluator } from './common/ApiXAccessLevelEvaluator';
-import { ApiXCache } from './common/ApiXCache';
-import { ApiXDataManager } from './ApiXDataManager';
-import { ApiXHttpHeaders } from './common/ApiXHttpHeaders';
-import { ApiXInputUrlQueryParameterProcessor } from './common/methods/ApiXInputUrlQueryParameterProcessor';
-import { ApiXJsonDictionary } from './common/ApiXJsonDictionary';
-import { ApiXMethod } from './common/methods/ApiXMethod';
-import { ApiXMethodCharacteristic } from './common/methods/ApiXMethodCharacteristic';
-import { ApiXRequestInputSchema } from './common/methods/ApiXRequestInputSchema';
-import { Logger } from './common/Logger';
-import { apiXRequest } from './common/ApiXRequest';
+import { AccessLevel } from './common/AccessLevel';
+import { AccessLevelEvaluator } from './common/AccessLevelEvaluator';
 import bodyParser from 'body-parser';
+import { Cache } from './common/Cache';
 import { createHmac } from 'crypto';
+import { DataManager } from './DataManager';
+import { EndpointMethod } from './common/methods/EndpointMethod';
 import express from 'express';
-import { makeApiXErrorResponse } from './common/utils/makeApiXErrorResponse';
+import { HttpHeaders } from './common/HttpHeaders';
+import { initRequest } from './common/Request';
+import { InputUrlQueryParameterProcessor } from './common/methods/InputUrlQueryParameterProcessor';
+import { JsonDictionary } from './common/JsonDictionary';
+import { Logger } from './common/Logger';
+import { makeErrorResponse } from './common/utils/makeErrorResponse';
+import { MethodCharacteristic } from './common/methods/MethodCharacteristic';
+import { RequestInputSchema } from './common/methods/RequestInputSchema';
 import path from 'path';
+import { getGeneratedEndpoints, isValidEndpointGenerator } from './common/methods/Decorators';
+import { TypeUtil } from './common/utils/TypeUtil';
 
 /**
  * Type used to define an express handler as used in API-X.
  */
-type ExpressHandler = (req: Request, res: Response) => Promise<void>;
+type ExpressHandler = (req: ExpressRequest, res: ExpressResponse) => Promise<void>;
 
 enum MetricName {
   SuccessfulRequest = 'SuccessfulRequest',
@@ -63,14 +65,14 @@ enum RequestRejectionReason {
  * 
  * @category Building HTTP RESTful APIs
  */
-export class ApiXManager {
+export class AppManager {
   private app;
   private appConfig: ApiXConfig;
-  private accessLevelEvaluator: ApiXAccessLevelEvaluator;
-  private dataManager: ApiXDataManager;
-  private appCache: ApiXCache;
+  private accessLevelEvaluator: AccessLevelEvaluator;
+  private dataManager: DataManager;
+  private appCache: Cache;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private registeredMethods: Record<string, ApiXMethod<any, any>>;
+  private registeredMethods: Record<string, EndpointMethod<any, any>>;
   private logger?: Logger;
   private metricManager?: MetricManager;
   private metricManagerOptions?: MetricManagerOptions;
@@ -91,17 +93,17 @@ export class ApiXManager {
 
   /**
    * Constructor
-   * @param {ApiXAccessLevelEvaluator} evaluator An evaluator to perform access control.
-   * @param {ApiXDataManager} dataManager An object that manages date for consumption by the API.
-   * @param {ApiXConfig} appConfig An object with the configuration of the API.
-   * @param {ApiXCache} appCache A cache used for the API.
+   * @param evaluator An evaluator to perform access control.
+   * @param dataManager An object that manages date for consumption by the API.
+   * @param appConfig An object with the configuration of the API.
+   * @param appCache A cache used for the API.
    */
   public constructor(
-      evaluator: ApiXAccessLevelEvaluator,
-      dataManager: ApiXDataManager,
-      appConfig: ApiXConfig,
-      appCache: ApiXCache,
-      logger?: Logger
+    evaluator: AccessLevelEvaluator,
+    dataManager: DataManager,
+    appConfig: ApiXConfig,
+    appCache: Cache,
+    logger?: Logger
   ) {
     this.app = express();
     this.appConfig = appConfig;
@@ -115,7 +117,7 @@ export class ApiXManager {
     this.app.use(bodyParser.json());
     const self = this;
     this.app.use((req, res, next) => {
-      if (self.developerModeEnabled || req.secure || req.header(ApiXHttpHeaders.ForwardedProto) === 'https') {
+      if (self.developerModeEnabled || req.secure || req.header(HttpHeaders.ForwardedProto) === 'https') {
         next();
       } else {
         // Request was not made over HTTPS
@@ -150,23 +152,39 @@ export class ApiXManager {
 
   /**
    * Sets a metric manager for metric emit.
-   * @param {MetricManager} manager The metric manager object.
-   * @param {MetricManagerOptions} options The options when emitting metrics.
+   * @param manager The metric manager object.
+   * @param options The options when emitting metrics.
    */
   public setMetricManager(manager: MetricManager, options?: MetricManagerOptions) {
     this.metricManager = manager;
     this.metricManagerOptions = options;
   }
+  
+  /**
+   * Registers all methods that the generator provides.
+   * @param generator The method generator object. Must have the proper decorators such as @EndpointGenerator,
+   * and must have at least one route defined.
+   */
+  public registerEndpointGenerator(generator: object) {
+    if (!isValidEndpointGenerator(generator)) {
+      throw new Error('Invalid endpoint generator! Endpoint generators must have the proper decorators such as @EndpointGenerator.');
+    }
+
+    const methods = getGeneratedEndpoints(generator);
+    for (const method of methods) {
+      this.registerAppMethod(method);
+    }
+  }
 
   /**
    * Registers an app method.
-   * @param {ApiXMethod} appMethod App method to register.
+   * @param appMethod App method to register.
    */
   public registerAppMethod<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    appMethod: ApiXMethod<QuerySchema, BodySchema>
+    appMethod: EndpointMethod<QuerySchema, BodySchema>
   ) {
     if (this.methodProvidesOwnedResources(appMethod) && !appMethod.requestorOwnsResource) {
       throw new Error(`Attempting to register a method that provides owned resources without implementing 'requestorOwnsResource'.`);
@@ -179,10 +197,10 @@ export class ApiXManager {
       this.registeredMethods[endpoint] = appMethod;
     }
 
-    const inputQueryParameterProcessor = new ApiXInputUrlQueryParameterProcessor<QuerySchema>();
+    const inputQueryParameterProcessor = new InputUrlQueryParameterProcessor<QuerySchema>();
 
     const self = this;
-    const methodWrappedHandler: ExpressHandler = async (req: Request, res: Response) => {
+    const methodWrappedHandler: ExpressHandler = async (req: ExpressRequest, res: ExpressResponse) => {
       // Get and verify all implicitly required queries
       const startTime = Date.now();
       if (!self.verifyHeadersInRequest(req)) {
@@ -198,7 +216,7 @@ export class ApiXManager {
         return;
       }
 
-      const apiKey = req.header(ApiXHttpHeaders.ApiKey) as string;
+      const apiKey = req.header(HttpHeaders.ApiKey) as string;
 
       if (!this.developerModeEnabled && !(await self.verifyApp(apiKey ?? ''))) {
         res.status(401).send(this.makeErrorResponse('unauthorizedApp'));
@@ -236,7 +254,7 @@ export class ApiXManager {
           );
         } catch (error) {
           if (error instanceof Error) {
-            res.status(400).send(makeApiXErrorResponse('invalidRequestParameters', error.message));
+            res.status(400).send(makeErrorResponse('invalidRequestParameters', error.message));
             this.emitStatusMetric(400, appMethod);
           } else {
             res.status(400).send(this.makeErrorResponse('unknownError'));
@@ -290,9 +308,9 @@ export class ApiXManager {
       
       const accessLevel = await self.accessLevelEvaluator.evaluate(
         appMethod, 
-        apiXRequest(
+        initRequest(
           req,
-          ApiXAccessLevel.NoAccess, /// Provisional until actual access level is determined.
+          AccessLevel.NoAccess, /// Provisional until actual access level is determined.
           queryParameters,
           jsonBody
         )
@@ -312,7 +330,7 @@ export class ApiXManager {
         return;
       }
 
-      const request = apiXRequest(
+      const request = initRequest(
         req,
         accessLevel,
         queryParameters,
@@ -343,15 +361,15 @@ export class ApiXManager {
 
   /**
    * Registers a wrapper request handler for an app method
-   * @param {ExpressHandler} requestHandler
-   * @param {ApiXMethod} appMethod
+   * @param requestHandler
+   * @param appMethod
    */
   private registerHandlerForAppMethod<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
     requestHandler: ExpressHandler,
-    appMethod: ApiXMethod<QuerySchema, BodySchema>,
+    appMethod: EndpointMethod<QuerySchema, BodySchema>,
     endpoint: string
   ) {
     const httpMethod = appMethod.httpMethod || 'GET';
@@ -373,20 +391,26 @@ export class ApiXManager {
 
   /**
    * Verifies the request's integrity and authorization.
-   * @param {Request} req Request object.
-   * @return {boolean} true if the request is authorized and unmodified.
+   * @param req Request object.
+   * @return true if the request is authorized and unmodified.
    */
-  private async verifyRequest(req: Request): Promise<boolean> {
+  private async verifyRequest(req: ExpressRequest): Promise<boolean> {
     // Verify Request Date is Valid
-    const apiKey = req.header(ApiXHttpHeaders.ApiKey);
-    const dateString = req.header(ApiXHttpHeaders.Date);
-    const signature = req.header(ApiXHttpHeaders.Signature);
-    const signatureNonce = req.header(ApiXHttpHeaders.SignatureNonce);
+    const apiKey = req.header(HttpHeaders.ApiKey);
+    const dateString = req.header(HttpHeaders.Date);
+    const signature = req.header(HttpHeaders.Signature);
+    const signatureNonce = req.header(HttpHeaders.SignatureNonce);
 
     // In milliseconds
     const maxRequestAge = this.appConfig.valueForKey<number>(ApiXConfigKey.MaxRequestAge);
+    const maxAgeIsNumber = typeof maxRequestAge === 'number';
+    const maxAgeIsValid = maxAgeIsNumber && (Number.isFinite(maxRequestAge) ? maxRequestAge >= 0 : maxRequestAge === Infinity);
 
-    if (!maxRequestAge || !dateString || !apiKey || !signature || !signatureNonce) {
+    if (!maxAgeIsValid
+      || !TypeUtil.isValidDateString(dateString)
+      || !TypeUtil.isNonEmptyString(apiKey)
+      || !TypeUtil.isNonEmptyString(signature)
+      || !TypeUtil.isNonEmptyString(signatureNonce)) {
       return false;
     }
 
@@ -416,8 +440,9 @@ export class ApiXManager {
 
       // Verify Session
       const hmac = createHmac('sha256', appSigningKey);
-      const httpBody = Object.keys(req.body).length > 0 ?
-            JSON.stringify(this.sortedObjectKeys(req.body)) : '';
+      const body = req.body ?? {};
+      const httpBody = Object.keys(body).length > 0 ?
+            JSON.stringify(this.sortedObjectKeys(body)) : '';
       const httpBodyBase64 = httpBody.length > 0 ?
             Buffer.from(httpBody, 'binary').toString('base64') : '';
       const path = req.originalUrl.split('?')[0];
@@ -431,7 +456,8 @@ export class ApiXManager {
         .toString('hex');
       
       if (calculatedSignature === signature) {
-        await this.appCache.setValueForKey(signature, cacheKey);
+        const ttlSeconds = Number.isFinite(maxRequestAge) ? Math.ceil(((maxRequestAge as number) + 10_000) / 1000) : undefined;
+        await this.appCache.setValueForKey(signature, cacheKey, ttlSeconds);
       }
 
       return calculatedSignature === signature;
@@ -473,33 +499,33 @@ export class ApiXManager {
 
   /**
    * Verifies if there's enough clearance to access the resource
-   * @param {ApiXMethod} appMethod The method to access.
-   * @param {ApiXAccessLevel} requestorAccessLevel Access level of the requestor.
+   * @param {EndpointMethod} appMethod The method to access.
+   * @param {AccessLevel} requestorAccessLevel Access level of the requestor.
    * @return {boolean} true if enough if requestor has enough access.
    */
   private verifyRequestAuthorization<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    appMethod: ApiXMethod<QuerySchema, BodySchema>,
-    requestorAccessLevel: ApiXAccessLevel
+    appMethod: EndpointMethod<QuerySchema, BodySchema>,
+    requestorAccessLevel: AccessLevel
   ): boolean {
 
     /**
      * First, verify if app method has any closed characteristics.
      */
-    if (appMethod.characteristics.has(ApiXMethodCharacteristic.Internal)) {
+    if (appMethod.characteristics.has(MethodCharacteristic.Internal)) {
       /// Anything that is internal requires an access level of `Admin`.
-      return requestorAccessLevel === ApiXAccessLevel.Admin;
-    } else if (appMethod.characteristics.has(ApiXMethodCharacteristic.Moderative)) {
+      return requestorAccessLevel === AccessLevel.Admin;
+    } else if (appMethod.characteristics.has(MethodCharacteristic.Moderative)) {
       /// For moderative endpoints, at least a `Moderator` is required.
-      return requestorAccessLevel <= ApiXAccessLevel.Moderator;
-    } else if (appMethod.characteristics.has(ApiXMethodCharacteristic.Institutional)) {
+      return requestorAccessLevel <= AccessLevel.Moderator;
+    } else if (appMethod.characteristics.has(MethodCharacteristic.Institutional)) {
       /// For instituitional endpoints, at least a `Manager` is required.
-      return requestorAccessLevel <= ApiXAccessLevel.Manager;
-    } else if (appMethod.characteristics.has(ApiXMethodCharacteristic.Special)) {
+      return requestorAccessLevel <= AccessLevel.Manager;
+    } else if (appMethod.characteristics.has(MethodCharacteristic.Special)) {
       /// For special endpoints, at least a `PrivilegedRequestor` is required.
-      return requestorAccessLevel <= ApiXAccessLevel.PrivilegedRequestor;
+      return requestorAccessLevel <= AccessLevel.PrivilegedRequestor;
     }
 
     /**
@@ -507,16 +533,16 @@ export class ApiXManager {
      * can be accessed and serve the minimum amount of data that the requestor has
      * access to.
      */
-    if (appMethod.characteristics.has(ApiXMethodCharacteristic.PublicUnownedData)) {
+    if (appMethod.characteristics.has(MethodCharacteristic.PublicUnownedData)) {
       /// Anything that can serve public data only requires an access level of `Public`.
-      return requestorAccessLevel <= ApiXAccessLevel.PublicRequestor;
-    } else if (appMethod.characteristics.has(ApiXMethodCharacteristic.PublicOwnedData)) {
+      return requestorAccessLevel <= AccessLevel.PublicRequestor;
+    } else if (appMethod.characteristics.has(MethodCharacteristic.PublicOwnedData)) {
       /// Anything that can serve public owned data but not public unowned data only
       /// required `AuthenticatedRequestor`.
-      return requestorAccessLevel <= ApiXAccessLevel.AuthenticatedRequestor;
-    } else if (appMethod.characteristics.has(ApiXMethodCharacteristic.PrivateOwnedData)) {
+      return requestorAccessLevel <= AccessLevel.AuthenticatedRequestor;
+    } else if (appMethod.characteristics.has(MethodCharacteristic.PrivateOwnedData)) {
       /// Anything that only serves private owned data requires the requestor be `ResourceOwner`.
-      return requestorAccessLevel <= ApiXAccessLevel.ResourceOwner;
+      return requestorAccessLevel <= AccessLevel.ResourceOwner;
     }
 
     // If a method has no characteristics, it cannot be accessed.
@@ -525,20 +551,20 @@ export class ApiXManager {
 
   /**
    * Verifies if the required keys exist in the request data.
-   * @param {[string]} requiredKeys Keys required in request.
-   * @param {ApiXJsonDictionary<unknown>} data Request data.
-   * @return {boolean} true or false.
+   * @param req Express request object.
+   * @return true or false.
    */
-  private verifyHeadersInRequest(req: Request): boolean {
+  private verifyHeadersInRequest(req: ExpressRequest): boolean {
     const requiredHeaders = [
-      ApiXHttpHeaders.ApiKey,
-      ApiXHttpHeaders.Date,
-      ApiXHttpHeaders.Signature,
-      ApiXHttpHeaders.SignatureNonce
+      HttpHeaders.ApiKey,
+      HttpHeaders.Date,
+      HttpHeaders.Signature,
+      HttpHeaders.SignatureNonce
     ];
 
     for (const header of requiredHeaders) {
-      if (!req.header(header)) {
+      const value = req.header(header);
+      if (!TypeUtil.isNonEmptyString(value)) {
         return false;
       }
     }
@@ -547,56 +573,56 @@ export class ApiXManager {
 
   /**
    * Provides the route or endpoint for an app method.
-   * @param {ApiXMethod} appMethod App method.
-   * @return {string} Endpoint or route.
+   * @param appMethod App method.
+   * @return Endpoint or route.
    */
   private endpointForMethod<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    appMethod: ApiXMethod<QuerySchema, BodySchema>
+    appMethod: EndpointMethod<QuerySchema, BodySchema>
   ): string {
     if (!appMethod.entity && !appMethod.method) {
       return '/';
     }
 
-    let endpoint = path.join(appMethod.entity || '', appMethod.method);
+    let endpoint = path.posix.join(appMethod.entity || '', appMethod.method);
 
     if (endpoint.endsWith('/')) {
       endpoint = endpoint.substring(0, endpoint.length - 1);
     }
 
-    return endpoint[0].startsWith('/') ? endpoint : '/' + endpoint;
+    return endpoint.startsWith('/') ? endpoint : '/' + endpoint;
   }
 
   /**
    * Determines if a provided method already exists
-   * @param {ApiXMethod} appMethod App method
-   * @return {boolean} Returns true if a method with this route and http method is registered
+   * @param appMethod App method
+   * @return Returns true if a method with this route and http method is registered
    */
   private isMethodRegistered<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    appMethod: ApiXMethod<QuerySchema, BodySchema>
+    appMethod: EndpointMethod<QuerySchema, BodySchema>
   ): boolean {
     const method = this.registeredMethods[this.endpointForMethod(appMethod)];
-    return method && method.httpMethod == appMethod.httpMethod;
+    return !!method && method.httpMethod == appMethod.httpMethod;
   }
 
   /**
    * Determines whether a given method provides owned data / resources.
-   * @param {ApiXMethod} appMethod The method to check.
+   * @param appMethod The method to check.
    * @returns `true` if the method provides owned resources.
    */
   private methodProvidesOwnedResources<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    appMethod: ApiXMethod<QuerySchema, BodySchema>
+    appMethod: EndpointMethod<QuerySchema, BodySchema>
   ): boolean {
-    return appMethod.characteristics.has(ApiXMethodCharacteristic.PrivateOwnedData)
-        || appMethod.characteristics.has(ApiXMethodCharacteristic.PublicOwnedData);
+    return appMethod.characteristics.has(MethodCharacteristic.PrivateOwnedData)
+        || appMethod.characteristics.has(MethodCharacteristic.PublicOwnedData);
   }
 
   /**
@@ -607,13 +633,13 @@ export class ApiXManager {
    * @param method The API-X method emitting this metric.
    */
   private emitMetric<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
     name: string,
     value: number,
     tags: MetricTags,
-    method: ApiXMethod<QuerySchema, BodySchema>) {
+    method: EndpointMethod<QuerySchema, BodySchema>) {
     const finalTags = { 
       ...tags,
       ...(this.metricManagerOptions?.tags ?? {}),
@@ -630,9 +656,9 @@ export class ApiXManager {
    * @param method The API-X method emitting this metric.
    */
   private emitStatusMetric<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
-  >(statusCode: number, method: ApiXMethod<QuerySchema, BodySchema>) {
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
+  >(statusCode: number, method: EndpointMethod<QuerySchema, BodySchema>) {
     let statusRange: string;
 
     if (statusCode < 300) {
@@ -654,10 +680,10 @@ export class ApiXManager {
 
   /**
    * Creates an error response for the given error ID.
-   * @param {ApiXResponseErrorId} id The error ID.
-   * @returns {ApiXJsonDictionary<unknown>} The error response.
+   * @param id The error ID.
+   * @returns The error response.
    */
-  private makeErrorResponse(id: ApiXResponseErrorId): ApiXJsonDictionary<unknown> {
-    return makeApiXErrorResponse(id, errorMessages[id]);
+  private makeErrorResponse(id: ApiXResponseErrorId): JsonDictionary<unknown> {
+    return makeErrorResponse(id, errorMessages[id]);
   }
 }

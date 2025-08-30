@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  ApiXUrlQueryParameter,
   InvalidParameterError,
-  MissingRequiredParameterError
-} from '../ApiXUrlQueryParameter';
-import { ApiXUrlQueryParameterProcessor } from '../ApiXUrlQueryParameterProcessor';
-import { ApiXUrlQueryParameterValidator } from '../ApiXUrlQueryParameterValidator';
+  MissingRequiredParameterError,
+  UrlQueryParameter
+} from '../UrlQueryParameter';
 import { Request } from 'express';
+import { UrlQueryParameterProcessor } from '../UrlQueryParameterProcessor';
+import { UrlQueryParameterValidator } from '../UrlQueryParameterValidator';
 
-describe(`ApiXUrlQueryParameter`, () => {
-  let mockValidator: jest.Mocked<ApiXUrlQueryParameterValidator>;
-  let mockProcessor: jest.Mocked<ApiXUrlQueryParameterProcessor<any>>;
+describe(`UrlQueryParameter`, () => {
+  let mockValidator: jest.Mocked<UrlQueryParameterValidator>;
+  let mockProcessor: jest.Mocked<UrlQueryParameterProcessor<any>>;
 
   beforeEach(() => {
     mockValidator = {
@@ -30,7 +30,7 @@ describe(`ApiXUrlQueryParameter`, () => {
       }
     } as unknown as Request;
 
-    let queryParam = new ApiXUrlQueryParameter(
+    let queryParam = new UrlQueryParameter(
       'missingParam',
       mockValidator,
       mockProcessor,
@@ -40,7 +40,7 @@ describe(`ApiXUrlQueryParameter`, () => {
     expect(() => queryParam.get(req)).toThrow(MissingRequiredParameterError);
     expect(() => queryParam.get(req)).toThrow('Missing required parameter missingParam');
 
-    queryParam = new ApiXUrlQueryParameter(
+    queryParam = new UrlQueryParameter(
       'emptyParam',
       mockValidator,
       mockProcessor,
@@ -59,7 +59,7 @@ describe(`ApiXUrlQueryParameter`, () => {
       }
     } as unknown as Request;
 
-    let queryParam = new ApiXUrlQueryParameter(
+    let queryParam = new UrlQueryParameter(
       'missingParam',
       mockValidator,
       mockProcessor
@@ -67,7 +67,7 @@ describe(`ApiXUrlQueryParameter`, () => {
 
     expect(queryParam.get(req)).toBeUndefined();
     
-    queryParam = new ApiXUrlQueryParameter(
+    queryParam = new UrlQueryParameter(
       'emptyParam',
       mockValidator,
       mockProcessor
@@ -88,7 +88,7 @@ describe(`ApiXUrlQueryParameter`, () => {
       isValid: jest.fn().mockReturnValue(false)
     }
 
-    const queryParam = new ApiXUrlQueryParameter(
+    const queryParam = new UrlQueryParameter(
       'invalidParam',
       mockValidator,
       mockProcessor
@@ -112,7 +112,7 @@ describe(`ApiXUrlQueryParameter`, () => {
       })
     }
 
-    const queryParam = new ApiXUrlQueryParameter(
+    const queryParam = new UrlQueryParameter(
       'arrayParam',
       mockValidator,
       mockProcessor

@@ -3,7 +3,7 @@
  * 
  * @enum
  */
-export enum ApiXHttpHeaders {
+export enum HttpHeaders {
   /**
    * A header containing the API Key of a requesting application.
    */
