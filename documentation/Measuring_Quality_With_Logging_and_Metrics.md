@@ -8,7 +8,7 @@ API-X comes equipped with an interface that allows users to specify a logger and
 
 ## Enabling Logging
 
-The [`Logger`](/interfaces/apix.Logger.html) interface allows the The [`ApiXManager`](/classes/apix.ApiXManager.html) to log info, warnings, and debug messages. It logs enough information to be able to diagnose issues and identify common patterns in failed or rejected requests. Users should also use this logger to log information to a centralized location.
+The [`Logger`](/interfaces/apix.Logger.html) interface allows the The [`AppManager`](/classes/apix.AppManager.html) to log info, warnings, and debug messages. It logs enough information to be able to diagnose issues and identify common patterns in failed or rejected requests. Users should also use this logger to log information to a centralized location.
 
 A common logger which is fully compatible with the `Logger` interface out of the box is `pino`. Example usage:
 
@@ -23,7 +23,7 @@ const logger = pino({
 });
 
 ...
-const manager = new ApiXManager(
+const manager = new AppManager(
   ...,
   logger,
   ...
@@ -62,21 +62,21 @@ This will log to `/var/log/my-service.log` using pino.
 
 ## Measuring Quality with Metrics
 
-In addition to logging, the `ApiXManager` emits various metrics if a The [`MetricManager`](/interfaces/apix.MetricManager.html) is provided. The `MetricManager` requires a single method to be implemented; `emit`. The `emit` method simply emits a count metric. Example implementation:
+In addition to logging, the `AppManager` emits various metrics if a The [`MetricManager`](/interfaces/apix.MetricManager.html) is provided. The `MetricManager` requires a single method to be implemented; `emit`. The `emit` method simply emits a count metric. Example implementation:
 
 ```ts
 class MyMetricManager implements MetricManager {
   public emit(metricName: string, value?: number, tags?: MetricTags) {
     // TODO: Implement emit logic using some service such as Prometheus
-    // The `metricName` will be options.namePrefix + ApiXManager metric name.
+    // The `metricName` will be options.namePrefix + AppManager metric name.
   }
 }
 ```
 
-We have a `metricName`, `value` (defaults to 1 if not provided), and `tags` which are dimensions associated with the metric emitted. The metric manager is then set in the `ApiXManager`:
+We have a `metricName`, `value` (defaults to 1 if not provided), and `tags` which are dimensions associated with the metric emitted. The metric manager is then set in the `AppManager`:
 
 ```ts
-const manager = new ApiXManager(...);
+const manager = new AppManager(...);
 ...
 manager.setMetricManager(
   new MyMetricManager(),
@@ -89,7 +89,7 @@ manager.setMetricManager(
 );
 ```
 
-The `ApiXManager` then uses this metric manager to emit counter and latency metrics. Here are the metrics emitted by the manager and the tags used:
+The `AppManager` then uses this metric manager to emit counter and latency metrics. Here are the metrics emitted by the manager and the tags used:
 
 * SuccessfulRequest: Emits `1` when a request is successfully handled (200s or 300s status code). Emits `0` if the request is not rejected but failed at the request handler. Use the average of the metric to get a success rate for non-rejected requests.
   * Tags:

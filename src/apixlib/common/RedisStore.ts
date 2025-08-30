@@ -1,4 +1,4 @@
-import { ApiXCache, ApiXCacheValue } from "./ApiXCache";
+import { Cache, CacheValue } from "./Cache";
 import { RedisClientType, createClient } from 'redis';
 
 /**
@@ -7,7 +7,7 @@ import { RedisClientType, createClient } from 'redis';
  * @category Working with Caches
  * @beta
  */
-export class ApiXRedisStore implements ApiXCache {
+export class RedisStore implements Cache {
   private client: RedisClientType;
 
   /**
@@ -26,7 +26,7 @@ export class ApiXRedisStore implements ApiXCache {
     await this.client.connect();
   }
 
-  async setValueForKey(value: ApiXCacheValue, key: string, timeToLive?: number): Promise<void> {
+  async setValueForKey(value: CacheValue, key: string, timeToLive?: number): Promise<void> {
     await this.client.set(key, JSON.stringify(value));
     if (timeToLive) {
       await this.client.expire(key, timeToLive);
@@ -37,7 +37,7 @@ export class ApiXRedisStore implements ApiXCache {
     await this.client.del(key);
   }
 
-  async valueForKey(key: string): Promise<ApiXCacheValue | undefined> {
+  async valueForKey(key: string): Promise<CacheValue | undefined> {
     const value = await this.client.get(key);
     return value ? JSON.parse(value) : undefined;
   }

@@ -8,9 +8,9 @@
  * @category Working with HTTP Endpoints
  * @enum
  * 
- * @see {@link ApiXMethod#characteristics}
+ * @see {@link EndpointMethod#characteristics}
  */
-export const enum ApiXMethodCharacteristic {
+export const enum MethodCharacteristic {
   /**
    * An endpoint that is internal and should only be used by API owners or administrators.
    */

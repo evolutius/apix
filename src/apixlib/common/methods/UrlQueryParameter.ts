@@ -1,6 +1,7 @@
-import { ApiXUrlQueryParameterProcessor } from './ApiXUrlQueryParameterProcessor';
-import { ApiXUrlQueryParameterValidator } from './ApiXUrlQueryParameterValidator';
-import { Request } from 'express';
+import { Request as ExpressRequest } from 'express';
+import { UrlQueryParameterProcessor } from './UrlQueryParameterProcessor';
+import { UrlQueryParameterValidator } from './UrlQueryParameterValidator';
+import { TypeUtil } from '../utils/TypeUtil';
 
 /**
  * An error thrown when a required parameter is missing.
@@ -33,23 +34,23 @@ export class InvalidParameterError extends Error {
  * ```ts
  * const queryParameters = [
  *   // input is paramName, so it's expected to be `/entity/method?paramName=some_value`
- *   new ApiXUrlQueryParameter('paramName', someValidator, someProcessor, true),
+ *   new UrlQueryParameter('paramName', someValidator, someProcessor, true),
  *   // input is 'ANOTHER_PARAM', so it's expected to be `/entity/method?ANOTHER_PARAM=some_value`
  *   // use someProcessor to transform the name into something like anotherParam
- *   new ApiXUrlQueryParameter('ANOTHER_PARAM', someValidator, someProcessor)
+ *   new UrlQueryParameter('ANOTHER_PARAM', someValidator, someProcessor)
  * ]
  * ```
  * 
  * @category Working with HTTP Endpoints
  * 
  * @see {@link ApiXMethod#queryParameters}
- * {@link ApiXUrlQueryParameterValidator}
- * {@link ApiXUrlQueryParameterProcessor}
+ * {@link UrlQueryParameterValidator}
+ * {@link UrlQueryParameterProcessor}
  */
-export class ApiXUrlQueryParameter<T> {
+export class UrlQueryParameter<T> {
   private _name: string;
-  private _validator: ApiXUrlQueryParameterValidator;
-  private _processor: ApiXUrlQueryParameterProcessor<T>;
+  private _validator: UrlQueryParameterValidator;
+  private _processor: UrlQueryParameterProcessor<T>;
 
   /**
    * An optional query parameter.
@@ -59,8 +60,8 @@ export class ApiXUrlQueryParameter<T> {
    */
   constructor(
     name: string,
-    validator: ApiXUrlQueryParameterValidator,
-    processor: ApiXUrlQueryParameterProcessor<T>,
+    validator: UrlQueryParameterValidator,
+    processor: UrlQueryParameterProcessor<T>,
     private isRequired: boolean = false
   ) {
     this._name = name;
@@ -78,7 +79,7 @@ export class ApiXUrlQueryParameter<T> {
   /**
    * The validator that determines whether the value of the parameter is valid.
    */
-  public get validator(): ApiXUrlQueryParameterValidator {
+  public get validator(): UrlQueryParameterValidator {
     return this._validator;
   }
 
@@ -88,20 +89,22 @@ export class ApiXUrlQueryParameter<T> {
    * `param=value1,value2,value3` can be transformed so that the value is
    * converted into a `ReadonlyArray<string>` or a `ReadonlySet<string>`.
    */
-  public get processor(): ApiXUrlQueryParameterProcessor<T> {
+  public get processor(): UrlQueryParameterProcessor<T> {
     return this._processor;
   }
 
   /**
    * A method that validates and processes a parameter into its final form.
-   * @param {Request} req The express request that contains the query parameters.
+   * @param req The express request that contains the query parameters.
    * @throws `MissingRequiredParameterError` if the parameter is required but missing.
    * @throws `InvalidParameterError` if the parameter validation fails.
    * @returns The processed key value pair or `undefined` if missing and not required.
    */
-  public get(req: Request): [string, T] | undefined {
-    const value = req.query[this.name] as string ?? '';
-    if (value.length === 0) {
+  public get(req: ExpressRequest): [string, T] | undefined {
+    const raw = (req.query as Record<string, unknown>)[this.name];
+    const value = TypeUtil.getFirstStringFromQueryValue(raw);
+
+    if (!TypeUtil.isNonEmptyString(value)) {
       if (this.isRequired) {
         throw new MissingRequiredParameterError(this.name);
       }

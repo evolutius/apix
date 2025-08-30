@@ -3,31 +3,31 @@
  * 
  * @category Working with Caches
  */
-export declare type ApiXCacheValue = 
+export declare type CacheValue = 
   string
   | number
   | bigint
   | boolean
-  | Array<ApiXCacheValue>
-  | Map<string, ApiXCacheValue>
+  | Array<CacheValue>
+  | Map<string, CacheValue>
   | Record<string, unknown>
 
 /**
- * This is the interface to implement to add a Cache to the ApiXManager.
+ * This is the interface to implement to add a Cache to the `AppManager`.
  * This interface requires at least support for a key-value store.
- * If a class implements this interface and it is provided to the ApiXManager,
- * the ApiX will have enhanced security and faster operation.
+ * If a class implements this interface and it is provided to the `AppManager`,
+ * the API-X endpoints will have enhanced security and faster operation.
  * 
  * @category Working with Caches
  */
-export interface ApiXCache {
+export interface Cache {
   /**
    * Sets a value from the key in the key-value pair store.
-   * @param {ApiXCacheValue} value - The value to add to the store
+   * @param {CacheValue} value - The value to add to the store
    * @param {string} key - The key in the store
    * @param {number} timeToLive - Time to remove from cache
    */
-  setValueForKey(value: ApiXCacheValue, key: string, timeToLive?: number): void
+  setValueForKey(value: CacheValue, key: string, timeToLive?: number): void
 
   /**
    * Removes the value for the specified key. If the key
@@ -41,5 +41,5 @@ export interface ApiXCache {
    * @param {string} key - The key in the store
    * @return value, if it exists in the store
    */
-  valueForKey(key: string): ApiXCacheValue | undefined | Promise<ApiXCacheValue | undefined>
+  valueForKey(key: string): CacheValue | undefined | Promise<CacheValue | undefined>
 }

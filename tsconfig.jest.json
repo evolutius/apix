@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // TS 5 standard decorators
+    "experimentalDecorators": false,
+    "emitDecoratorMetadata": false,
+
+    // Required semantics for standard decorators
+    "useDefineForClassFields": true,
+    "target": "ES2022",
+
+    // Jest/node
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "lib": ["ES2022"],
+    "types": ["jest"],
+    "isolatedModules": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "**/__tests__/**/*.ts",
+    "**/__tests__/**/*.tsx"
+  ]
+}

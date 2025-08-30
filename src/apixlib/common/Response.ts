@@ -1,11 +1,11 @@
-import { ApiXJsonDictionary } from "./ApiXJsonDictionary";
+import { JsonDictionary } from "./JsonDictionary";
 
 /**
- * A response returned from an `ApiXRequestHandler`.
+ * A response returned from an `RequestHandler`.
  * 
  * @category Working with API Endpoints
  */
-export interface ApiXResponse {
+export interface Response {
   /**
    * The HTTP status code. If not provided, defaults to `200`.
    */
@@ -14,5 +14,5 @@ export interface ApiXResponse {
   /**
    * The JSON data of the response.
    */
-  readonly data: ApiXJsonDictionary<unknown>;
+  readonly data: JsonDictionary<unknown>;
 }

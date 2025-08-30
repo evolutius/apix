@@ -9,7 +9,7 @@
  * 
  * @category Working with Databases
  */
-export interface ApiXDataManager {
+export interface DataManager {
   /**
    * Fetches the application key for a given API key.
    * @param apiKey The API key.

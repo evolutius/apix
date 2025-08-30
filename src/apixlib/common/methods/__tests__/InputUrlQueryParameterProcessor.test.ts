@@ -1,18 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  ApiXUrlQueryParameter,
   InvalidParameterError,
-  MissingRequiredParameterError
-} from '../ApiXUrlQueryParameter';
-import { ApiXInputUrlQueryParameterProcessor } from '../ApiXInputUrlQueryParameterProcessor';
-import { ApiXRequestInputSchema } from '../ApiXRequestInputSchema';
-import { ApiXUrlQueryParameterProcessor } from '../ApiXUrlQueryParameterProcessor';
-import { ApiXUrlQueryParameterValidator } from '../ApiXUrlQueryParameterValidator';
+  MissingRequiredParameterError,
+  UrlQueryParameter
+} from '../UrlQueryParameter';
+import { InputUrlQueryParameterProcessor } from '../InputUrlQueryParameterProcessor';
 import { Request } from 'express';
+import { RequestInputSchema } from '../RequestInputSchema';
+import { UrlQueryParameterProcessor } from '../UrlQueryParameterProcessor';
+import { UrlQueryParameterValidator } from '../UrlQueryParameterValidator';
 
-describe('ApiXInputQueryParameterProcessor', () => {
-  let mockValidator: jest.Mocked<ApiXUrlQueryParameterValidator>;
-  let mockProcessor: jest.Mocked<ApiXUrlQueryParameterProcessor<any>>;
+describe('InputQueryParameterProcessor', () => {
+  let mockValidator: jest.Mocked<UrlQueryParameterValidator>;
+  let mockProcessor: jest.Mocked<UrlQueryParameterProcessor<any>>;
 
   beforeEach(() => {
     mockValidator = {
@@ -27,22 +27,22 @@ describe('ApiXInputQueryParameterProcessor', () => {
   });
 
   it('Correctly returns interface with all parameters present', () => {
-    interface MyQueryParams extends ApiXRequestInputSchema {
+    interface MyQueryParams extends RequestInputSchema {
       readonly id: string;
       readonly filters?: Array<string>;
       readonly sortBy?: string;
     }
 
-    const arrayProcessor: jest.Mocked<ApiXUrlQueryParameterProcessor<Array<string>>> = {
+    const arrayProcessor: jest.Mocked<UrlQueryParameterProcessor<Array<string>>> = {
       process: jest.fn().mockImplementation((name: string, value: string): [string, Array<string>] => {
         return [name, value.split(',')];
       })
     };
 
     const queryParameters = [
-      new ApiXUrlQueryParameter('id', mockValidator, mockProcessor, true),
-      new ApiXUrlQueryParameter('filters', mockValidator, arrayProcessor),
-      new ApiXUrlQueryParameter('sortBy', mockValidator, mockProcessor)
+      new UrlQueryParameter('id', mockValidator, mockProcessor, true),
+      new UrlQueryParameter('filters', mockValidator, arrayProcessor),
+      new UrlQueryParameter('sortBy', mockValidator, mockProcessor)
     ];
 
     const req = {
@@ -53,7 +53,7 @@ describe('ApiXInputQueryParameterProcessor', () => {
       }
     } as unknown as Request;
 
-    const processor = new ApiXInputUrlQueryParameterProcessor<MyQueryParams>();
+    const processor = new InputUrlQueryParameterProcessor<MyQueryParams>();
     const schema = processor.process(req, queryParameters);
     expect(schema).toEqual({
       id: '001ABC',
@@ -63,22 +63,22 @@ describe('ApiXInputQueryParameterProcessor', () => {
   });
 
   it('Correctly returns interface with missing or empty optional parameters', () => {
-    interface MyQueryParams extends ApiXRequestInputSchema {
+    interface MyQueryParams extends RequestInputSchema {
       readonly id: string;
       readonly filters?: Array<string>;
       readonly sortBy?: string;
     }
 
-    const arrayProcessor: jest.Mocked<ApiXUrlQueryParameterProcessor<Array<string>>> = {
+    const arrayProcessor: jest.Mocked<UrlQueryParameterProcessor<Array<string>>> = {
       process: jest.fn().mockImplementation((name: string, value: string): [string, Array<string>] => {
         return [name, value.split(',')];
       })
     };
 
     const queryParameters = [
-      new ApiXUrlQueryParameter('id', mockValidator, mockProcessor, true),
-      new ApiXUrlQueryParameter('filters', mockValidator, arrayProcessor),
-      new ApiXUrlQueryParameter('sortBy', mockValidator, mockProcessor)
+      new UrlQueryParameter('id', mockValidator, mockProcessor, true),
+      new UrlQueryParameter('filters', mockValidator, arrayProcessor),
+      new UrlQueryParameter('sortBy', mockValidator, mockProcessor)
     ];
 
     const req = {
@@ -88,7 +88,7 @@ describe('ApiXInputQueryParameterProcessor', () => {
       }
     } as unknown as Request;
 
-    const processor = new ApiXInputUrlQueryParameterProcessor<MyQueryParams>();
+    const processor = new InputUrlQueryParameterProcessor<MyQueryParams>();
     const schema = processor.process(req, queryParameters);
     expect(schema).toEqual({
       id: '001ABC',
@@ -96,7 +96,7 @@ describe('ApiXInputQueryParameterProcessor', () => {
   });
 
   it('Throws an error when there are invalid parameters', () => {
-    interface MyQueryParams extends ApiXRequestInputSchema {
+    interface MyQueryParams extends RequestInputSchema {
       readonly id: string;
       readonly filters?: Array<string>;
       readonly sortBy?: string;
@@ -106,16 +106,16 @@ describe('ApiXInputQueryParameterProcessor', () => {
       isValid: jest.fn().mockReturnValue(false)
     };
 
-    const arrayProcessor: jest.Mocked<ApiXUrlQueryParameterProcessor<Array<string>>> = {
+    const arrayProcessor: jest.Mocked<UrlQueryParameterProcessor<Array<string>>> = {
       process: jest.fn().mockImplementation((name: string, value: string): [string, Array<string>] => {
         return [name, value.split(',')];
       })
     };
 
     const queryParameters = [
-      new ApiXUrlQueryParameter('id', mockValidator, mockProcessor, true),
-      new ApiXUrlQueryParameter('filters', mockValidator, arrayProcessor),
-      new ApiXUrlQueryParameter('sortBy', mockValidator, mockProcessor)
+      new UrlQueryParameter('id', mockValidator, mockProcessor, true),
+      new UrlQueryParameter('filters', mockValidator, arrayProcessor),
+      new UrlQueryParameter('sortBy', mockValidator, mockProcessor)
     ];
 
     const req = {
@@ -126,13 +126,13 @@ describe('ApiXInputQueryParameterProcessor', () => {
       }
     } as unknown as Request;
 
-    const processor = new ApiXInputUrlQueryParameterProcessor<MyQueryParams>();
+    const processor = new InputUrlQueryParameterProcessor<MyQueryParams>();
     expect(() => processor.process(req, queryParameters)).toThrow(InvalidParameterError);
     expect(() => processor.process(req, queryParameters)).toThrow('Parameter id has an invalid value: XXXX');
   });
 
   it('Throws an error when there are missing required parameters', () => {
-    interface MyQueryParams extends ApiXRequestInputSchema {
+    interface MyQueryParams extends RequestInputSchema {
       readonly id: string;
       readonly filters?: Array<string>;
       readonly sortBy?: string;
@@ -142,16 +142,16 @@ describe('ApiXInputQueryParameterProcessor', () => {
       isValid: jest.fn().mockReturnValue(false)
     };
 
-    const arrayProcessor: jest.Mocked<ApiXUrlQueryParameterProcessor<Array<string>>> = {
+    const arrayProcessor: jest.Mocked<UrlQueryParameterProcessor<Array<string>>> = {
       process: jest.fn().mockImplementation((name: string, value: string): [string, Array<string>] => {
         return [name, value.split(',')];
       })
     };
 
     const queryParameters = [
-      new ApiXUrlQueryParameter('id', mockValidator, mockProcessor, true),
-      new ApiXUrlQueryParameter('filters', mockValidator, arrayProcessor),
-      new ApiXUrlQueryParameter('sortBy', mockValidator, mockProcessor)
+      new UrlQueryParameter('id', mockValidator, mockProcessor, true),
+      new UrlQueryParameter('filters', mockValidator, arrayProcessor),
+      new UrlQueryParameter('sortBy', mockValidator, mockProcessor)
     ];
 
     const req = {
@@ -161,7 +161,7 @@ describe('ApiXInputQueryParameterProcessor', () => {
       }
     } as unknown as Request;
 
-    const processor = new ApiXInputUrlQueryParameterProcessor<MyQueryParams>();
+    const processor = new InputUrlQueryParameterProcessor<MyQueryParams>();
     expect(() => processor.process(req, queryParameters)).toThrow(MissingRequiredParameterError);
     expect(() => processor.process(req, queryParameters)).toThrow('Missing required parameter id');
   });

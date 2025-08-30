@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { ApiXAccessLevel } from './ApiXAccessLevel';
-import { ApiXMethod } from './methods/ApiXMethod';
-import { ApiXMethodCharacteristic } from './methods/ApiXMethodCharacteristic';
-import { ApiXRequest } from './ApiXRequest';
-import { ApiXRequestInputSchema } from './methods/ApiXRequestInputSchema';
+import { AccessLevel } from './AccessLevel';
+import { EndpointMethod } from './methods/EndpointMethod';
+import { MethodCharacteristic } from './methods/MethodCharacteristic';
+import { Request } from './Request';
+import { RequestInputSchema } from './methods/RequestInputSchema';
 
 /**
  * A class that evaluates a request's access level for a given endpoint method.
@@ -29,73 +29,73 @@ import { ApiXRequestInputSchema } from './methods/ApiXRequestInputSchema';
  * 
  * @category Resource Access Permissions
  */
-export class ApiXAccessLevelEvaluator {
+export class AccessLevelEvaluator {
   /**
    * Returns the level of access required that the requestor has to access
    * the resources from the method.
-   * @param {ApiXMethod} appMethod The method to be accessed.
+   * @param {Method} appMethod The method to be accessed.
    * @param {Request} req The request that wants to access the method.
    */
   async evaluate<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    appMethod: ApiXMethod<QuerySchema, BodySchema>,
-    req: ApiXRequest<QuerySchema, BodySchema>
-  ): Promise<ApiXAccessLevel> {
+    appMethod: EndpointMethod<QuerySchema, BodySchema>,
+    req: Request<QuerySchema, BodySchema>
+  ): Promise<AccessLevel> {
 
     if ((await this.isDeniedRequestor(req))) {
-      return ApiXAccessLevel.NoAccess;
+      return AccessLevel.NoAccess;
     }
 
     // Internal
-    if (appMethod.characteristics.has(ApiXMethodCharacteristic.Internal)
+    if (appMethod.characteristics.has(MethodCharacteristic.Internal)
      && (await this.isInternalRequestor(req))) {
-      return ApiXAccessLevel.Admin;
+      return AccessLevel.Admin;
     }
 
     // Moderative
-    if (appMethod.characteristics.has(ApiXMethodCharacteristic.Moderative)
+    if (appMethod.characteristics.has(MethodCharacteristic.Moderative)
       && (await this.isModerativeRequestor(req))) {
-      return ApiXAccessLevel.Moderator;
+      return AccessLevel.Moderator;
     }
 
     // Institutional
-    if (appMethod.characteristics.has(ApiXMethodCharacteristic.Institutional)
+    if (appMethod.characteristics.has(MethodCharacteristic.Institutional)
       && (await this.isInstitutionalRequestor(req))) {
-      return ApiXAccessLevel.Manager;
+      return AccessLevel.Manager;
     }
 
     // Privileged
-    if (appMethod.characteristics.has(ApiXMethodCharacteristic.Special)
+    if (appMethod.characteristics.has(MethodCharacteristic.Special)
       && (await this.isPrivilegedRequestor(req))) {
-      return ApiXAccessLevel.PrivilegedRequestor;
+      return AccessLevel.PrivilegedRequestor;
     }
 
     // Determine highest level of ownership for methods w/ resources / data.
-    if (appMethod.characteristics.has(ApiXMethodCharacteristic.PrivateOwnedData)
+    if (appMethod.characteristics.has(MethodCharacteristic.PrivateOwnedData)
      && (await appMethod.requestorOwnsResource?.(req))) {
       // This method provides private data / resources and requestor owns the data.
-      return ApiXAccessLevel.ResourceOwner;
-    } else if (appMethod.characteristics.has(ApiXMethodCharacteristic.PublicOwnedData)) {
+      return AccessLevel.ResourceOwner;
+    } else if (appMethod.characteristics.has(MethodCharacteristic.PublicOwnedData)) {
       // This method provides public owned data, so resource owners and authenticated
       // requestors may access it.
       if ((await appMethod.requestorOwnsResource?.(req))) {
-        return ApiXAccessLevel.ResourceOwner;
+        return AccessLevel.ResourceOwner;
       } else if ((await this.isAuthenticatedRequestor(req))) {
-        return ApiXAccessLevel.AuthenticatedRequestor;
+        return AccessLevel.AuthenticatedRequestor;
       } else {
-        return ApiXAccessLevel.PublicRequestor;
+        return AccessLevel.PublicRequestor;
       }
-    } else if (appMethod.characteristics.has(ApiXMethodCharacteristic.PublicUnownedData)) {
+    } else if (appMethod.characteristics.has(MethodCharacteristic.PublicUnownedData)) {
       if ((await this.isAuthenticatedRequestor(req))) {
-        return ApiXAccessLevel.AuthenticatedRequestor;
+        return AccessLevel.AuthenticatedRequestor;
       } else {
-        return ApiXAccessLevel.PublicRequestor;
+        return AccessLevel.PublicRequestor;
       }
     }
 
-    return ApiXAccessLevel.NoAccess
+    return AccessLevel.NoAccess
   }
 
   //// Abstract / optional methods ////
@@ -113,10 +113,10 @@ export class ApiXAccessLevelEvaluator {
    * @returns A boolean that determines whether the requestor is denied access.
    */
   protected isDeniedRequestor<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    req: ApiXRequest<QuerySchema, BodySchema>
+    req: Request<QuerySchema, BodySchema>
   ): Promise<boolean> | boolean {
     return false;
   }
@@ -132,10 +132,10 @@ export class ApiXAccessLevelEvaluator {
    * @returns A boolean that determines whether the requestor is internal / an admin.
    */
   protected isInternalRequestor<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    req: ApiXRequest<QuerySchema, BodySchema>
+    req: Request<QuerySchema, BodySchema>
   ): Promise<boolean> | boolean {
     return false;
   }
@@ -151,10 +151,10 @@ export class ApiXAccessLevelEvaluator {
    * @returns A boolean that determines whether the requestor is moderator.
    */
   protected isModerativeRequestor<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    req: ApiXRequest<QuerySchema, BodySchema>
+    req: Request<QuerySchema, BodySchema>
   ): Promise<boolean> | boolean {
     return false;
   }
@@ -171,10 +171,10 @@ export class ApiXAccessLevelEvaluator {
    * @returns A boolean that determines whether the requestor is institutional.
    */
   protected isInstitutionalRequestor<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    req: ApiXRequest<QuerySchema, BodySchema>
+    req: Request<QuerySchema, BodySchema>
   ): Promise<boolean> | boolean {
     return false;
   }
@@ -190,10 +190,10 @@ export class ApiXAccessLevelEvaluator {
    * @returns A boolean that determines whether the requestor is privileged.
    */
   protected isPrivilegedRequestor<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    req: ApiXRequest<QuerySchema, BodySchema>
+    req: Request<QuerySchema, BodySchema>
   ): Promise<boolean> | boolean {
     return false;
   }
@@ -209,10 +209,10 @@ export class ApiXAccessLevelEvaluator {
    * @returns A boolean that determines whether the requestor is authenticated.
    */
   protected isAuthenticatedRequestor<
-    QuerySchema extends ApiXRequestInputSchema,
-    BodySchema extends ApiXRequestInputSchema
+    QuerySchema extends RequestInputSchema,
+    BodySchema extends RequestInputSchema
   >(
-    req: ApiXRequest<QuerySchema, BodySchema>
+    req: Request<QuerySchema, BodySchema>
   ): Promise<boolean> | boolean {
     return false;
   }

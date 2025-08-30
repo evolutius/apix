@@ -1,38 +1,38 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { ApiXConfig, ApiXConfigKey } from '../ApiXConfig';
-import { ApiXAccessLevel } from '../common/ApiXAccessLevel';
-import { ApiXAccessLevelEvaluator } from '../common/ApiXAccessLevelEvaluator';
-import { ApiXCache } from '../common/ApiXCache';
-import { ApiXDataManager } from '../ApiXDataManager';
-import { ApiXHttpBodyValidator } from '../common/methods/ApiXHttpBodyValidator';
-import { ApiXHttpHeaders } from '../common/ApiXHttpHeaders';
-import { ApiXManager } from '../ApiXManager';
-import { ApiXMethod } from '../common/methods/ApiXMethod';
-import { ApiXMethodCharacteristic } from '../common/methods/ApiXMethodCharacteristic';
-import { ApiXRequest } from '../common/ApiXRequest';
-import { ApiXRequestInputSchema } from '../common/methods/ApiXRequestInputSchema';
-import { ApiXUrlQueryParameter } from '../common/methods/ApiXUrlQueryParameter';
-import { ApiXUrlQueryParameterProcessor } from '../common/methods/ApiXUrlQueryParameterProcessor';
-import { ApiXUrlQueryParameterValidator } from '../common/methods/ApiXUrlQueryParameterValidator';
+import { AccessLevel } from '../common/AccessLevel';
+import { AccessLevelEvaluator } from '../common/AccessLevelEvaluator';
+import { AppManager } from '../AppManager';
+import { Cache } from '../common/Cache';
+import { DataManager } from '../DataManager';
+import { EndpointMethod } from '../common/methods/EndpointMethod';
 import { Express } from 'express';
+import { HttpBodyValidator } from '../common/methods/HttpBodyValidator';
+import { HttpHeaders } from '../common/HttpHeaders';
+import { MethodCharacteristic } from '../common/methods/MethodCharacteristic';
+import { Request } from '../common/Request';
+import { RequestInputSchema } from '../common/methods/RequestInputSchema';
+import { UrlQueryParameter } from '../common/methods/UrlQueryParameter';
+import { UrlQueryParameterProcessor } from '../common/methods/UrlQueryParameterProcessor';
+import { UrlQueryParameterValidator } from '../common/methods/UrlQueryParameterValidator';
 import { errorMessages } from '../common/ApiXError';
 import request from 'supertest';
 
-describe('ApiXManager', () => {
+describe('Manager', () => {
   let app: Express;
-  let appManager: ApiXManager;
-  let mockEvaluator: jest.Mocked<ApiXAccessLevelEvaluator>;
-  let mockDataManager: jest.Mocked<ApiXDataManager>;
+  let appManager: AppManager;
+  let mockEvaluator: jest.Mocked<AccessLevelEvaluator>;
+  let mockDataManager: jest.Mocked<DataManager>;
   let mockConfig: ApiXConfig;
-  let mockCache: jest.Mocked<ApiXCache>;
-  let mockValidator: jest.Mocked<ApiXUrlQueryParameterValidator>;
+  let mockCache: jest.Mocked<Cache>;
+  let mockValidator: jest.Mocked<UrlQueryParameterValidator>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockProcessor: jest.Mocked<ApiXUrlQueryParameterProcessor<any>>;
+  let mockProcessor: jest.Mocked<UrlQueryParameterProcessor<any>>;
 
   beforeEach(() => {
     mockEvaluator = {
-      evaluate: jest.fn().mockResolvedValue(ApiXAccessLevel.PublicRequestor),
-    } as unknown as jest.Mocked<ApiXAccessLevelEvaluator>;
+      evaluate: jest.fn().mockResolvedValue(AccessLevel.PublicRequestor),
+    } as unknown as jest.Mocked<AccessLevelEvaluator>;
 
     mockDataManager = {
       getAppKeyForApiKey: jest.fn().mockResolvedValue('test-key'),
@@ -56,7 +56,7 @@ describe('ApiXManager', () => {
       })
     };
 
-    appManager = new ApiXManager(mockEvaluator, mockDataManager, mockConfig, mockCache);
+    appManager = new AppManager(mockEvaluator, mockDataManager, mockConfig, mockCache);
     app = appManager['app']
   });
 
@@ -77,7 +77,7 @@ describe('ApiXManager', () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
         const data = { success: true };
         return { data };
@@ -87,7 +87,7 @@ describe('ApiXManager', () => {
       appManager.registerAppMethod({
         entity: 'entity',
         method: 'method',
-        characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+        characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
         requestHandler: () => {
           const data = { success: true };
           return { data };
@@ -100,7 +100,7 @@ describe('ApiXManager', () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
         const data = { success: true };
         return { data };
@@ -123,7 +123,7 @@ describe('ApiXManager', () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
         const data = { success: true };
         return { data };
@@ -132,9 +132,9 @@ describe('ApiXManager', () => {
 
     const response = await request(app)
       .get('/entity/method')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date().toUTCString())
-      .set(ApiXHttpHeaders.ForwardedProto, 'https') /// ensure it doesn't fail for insure protocol
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date().toUTCString())
+      .set(HttpHeaders.ForwardedProto, 'https') /// ensure it doesn't fail for insure protocol
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -151,7 +151,7 @@ describe('ApiXManager', () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
         const data = { success: true };
         return { data };
@@ -160,11 +160,11 @@ describe('ApiXManager', () => {
 
     const response = await request(app)
       .get('/entity/method')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date().toUTCString())
-      .set(ApiXHttpHeaders.Signature, '') /// empty signature
-      .set(ApiXHttpHeaders.SignatureNonce, 'sigNonce')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date().toUTCString())
+      .set(HttpHeaders.Signature, '') /// empty signature
+      .set(HttpHeaders.SignatureNonce, 'sigNonce')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -181,7 +181,7 @@ describe('ApiXManager', () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
         const data = { success: true };
         return { data };
@@ -192,11 +192,11 @@ describe('ApiXManager', () => {
 
     const response = await request(app)
       .get('/entity/method')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date().toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'sig')
-      .set(ApiXHttpHeaders.SignatureNonce, 'sigNonce')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date().toUTCString())
+      .set(HttpHeaders.Signature, 'sig')
+      .set(HttpHeaders.SignatureNonce, 'sigNonce')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
@@ -213,7 +213,7 @@ describe('ApiXManager', () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
         const data = { success: true };
         return { data };
@@ -222,18 +222,18 @@ describe('ApiXManager', () => {
 
     const response = await request(app)
       .get('/entity/method')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.ApiKey, 'some-key')
       .set(
-        ApiXHttpHeaders.Date,
+        HttpHeaders.Date,
         new Date(
           Date.now()
           - (mockConfig.valueForKey(ApiXConfigKey.MaxRequestAge) as number)
           - 1
         ).toUTCString()
       )
-      .set(ApiXHttpHeaders.Signature, 'sig')
-      .set(ApiXHttpHeaders.SignatureNonce, 'sigNonce')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.Signature, 'sig')
+      .set(HttpHeaders.SignatureNonce, 'sigNonce')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
@@ -250,7 +250,7 @@ describe('ApiXManager', () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       requestHandler: () => {
         const data = { success: true };
         return { data };
@@ -259,11 +259,11 @@ describe('ApiXManager', () => {
 
     const response = await request(app)
       .get('/entity/method')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date().toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'invalidSignature')
-      .set(ApiXHttpHeaders.SignatureNonce, 'sigNonce')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date().toUTCString())
+      .set(HttpHeaders.Signature, 'invalidSignature')
+      .set(HttpHeaders.SignatureNonce, 'sigNonce')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
@@ -278,15 +278,15 @@ describe('ApiXManager', () => {
 
   it('attempting to register owned methods without implementation of `requestorOwnsResource` fails', async () => {
     expect(() => appManager.registerAppMethod({
-      characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
-    } as unknown as ApiXMethod)).toThrow(`Attempting to register a method that provides owned resources without implementing 'requestorOwnsResource'.`);
+      characteristics: new Set([MethodCharacteristic.PrivateOwnedData]),
+    } as unknown as EndpointMethod)).toThrow(`Attempting to register a method that provides owned resources without implementing 'requestorOwnsResource'.`);
   });
 
   it('should reject requests with insufficient access levels', async () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]), /// requires `ResourceOwner`
+      characteristics: new Set([MethodCharacteristic.PrivateOwnedData]), /// requires `ResourceOwner`
       requestHandler: () => {
         const data = { success: true };
         return { data };
@@ -299,11 +299,11 @@ describe('ApiXManager', () => {
 
     const response = await request(app)
       .get('/entity/method')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'be4b6dc790c201d12609813fdced7ccc8d54b1249dccbfe9ea32fd89e6dd9aae')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, 'be4b6dc790c201d12609813fdced7ccc8d54b1249dccbfe9ea32fd89e6dd9aae')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
@@ -320,10 +320,10 @@ describe('ApiXManager', () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       queryParameters: [
-        new ApiXUrlQueryParameter('param1', mockValidator, mockProcessor, true),
-        new ApiXUrlQueryParameter('param2', mockValidator, mockProcessor, true),
+        new UrlQueryParameter('param1', mockValidator, mockProcessor, true),
+        new UrlQueryParameter('param2', mockValidator, mockProcessor, true),
       ],
       requestHandler: () => {
         const data = { success: true };
@@ -336,11 +336,11 @@ describe('ApiXManager', () => {
 
     const response = await request(app)
       .get('/entity/method?param1=here')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, '9d21edd19fab19fcf1df95573d78962f19271f1213a5111c0f6c8387d0afc724')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, '9d21edd19fab19fcf1df95573d78962f19271f1213a5111c0f6c8387d0afc724')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -358,10 +358,10 @@ describe('ApiXManager', () => {
       entity: 'entity',
       method: 'method',
       httpMethod: 'POST',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       queryParameters: [
-        new ApiXUrlQueryParameter('param1', mockValidator, mockProcessor, true),
-        new ApiXUrlQueryParameter('param2', mockValidator, mockProcessor, true),
+        new UrlQueryParameter('param1', mockValidator, mockProcessor, true),
+        new UrlQueryParameter('param2', mockValidator, mockProcessor, true),
       ],
       requestHandler: () => {
         const data = { success: true };
@@ -388,11 +388,11 @@ describe('ApiXManager', () => {
           subKey4: ['value1', 'value2']
         }
       })
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, expectedSignature)
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, expectedSignature)
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ success: true });
@@ -411,11 +411,11 @@ describe('ApiXManager', () => {
         },
         key1: 'value1'
       })
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, expectedSignature)
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, expectedSignature)
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ success: true });
@@ -426,10 +426,10 @@ describe('ApiXManager', () => {
       entity: 'entity',
       method: 'method',
       httpMethod: 'POST',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       queryParameters: [
-        new ApiXUrlQueryParameter('param1', mockValidator, mockProcessor, true),
-        new ApiXUrlQueryParameter('param2', mockValidator, mockProcessor, true),
+        new UrlQueryParameter('param1', mockValidator, mockProcessor, true),
+        new UrlQueryParameter('param2', mockValidator, mockProcessor, true),
       ],
       requestHandler: () => {
         const data = { success: true };
@@ -456,11 +456,11 @@ describe('ApiXManager', () => {
           subKey4: ['value1', 'value2']
         }
       })
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, expectedSignature)
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, expectedSignature)
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ success: true });
@@ -479,11 +479,11 @@ describe('ApiXManager', () => {
         },
         key1: 'value1'
       })
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, expectedSignature)
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, expectedSignature)
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ 
@@ -504,10 +504,10 @@ describe('ApiXManager', () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       queryParameters: [
-        new ApiXUrlQueryParameter('param1', mockValidator, mockProcessor, true),
-        new ApiXUrlQueryParameter('param2', mockValidator, mockProcessor),
+        new UrlQueryParameter('param1', mockValidator, mockProcessor, true),
+        new UrlQueryParameter('param2', mockValidator, mockProcessor),
       ],
       requestHandler: () => {
         const data = { success: true };
@@ -520,11 +520,11 @@ describe('ApiXManager', () => {
 
     const response = await request(app)
       .get('/entity/method?param1=here')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, '9d21edd19fab19fcf1df95573d78962f19271f1213a5111c0f6c8387d0afc724')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, '9d21edd19fab19fcf1df95573d78962f19271f1213a5111c0f6c8387d0afc724')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -538,18 +538,18 @@ describe('ApiXManager', () => {
   });
 
   it('should fulfill valid get requests', async () => {
-    interface QueryParams extends ApiXRequestInputSchema {
+    interface QueryParams extends RequestInputSchema {
       readonly message: string;
     }
 
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       queryParameters: [
-        new ApiXUrlQueryParameter('message', mockValidator, mockProcessor, true)
+        new UrlQueryParameter('message', mockValidator, mockProcessor, true)
       ],
-      requestHandler: (request: ApiXRequest<QueryParams>) => {
+      requestHandler: (request: Request<QueryParams>) => {
         const data = { success: true, message: request.queryParameters?.message };
         return { data };
       }
@@ -560,11 +560,11 @@ describe('ApiXManager', () => {
 
     const response = await request(app)
       .get('/entity/method?message=This%20passed')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'cb78ce350cd07ad6d8cf0738c83b66139bd9ac3db742e8185ecadc4c4deddb81')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, 'cb78ce350cd07ad6d8cf0738c83b66139bd9ac3db742e8185ecadc4c4deddb81')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -584,18 +584,18 @@ describe('ApiXManager', () => {
       return dataObject[key];
     });
 
-    interface QueryParams extends ApiXRequestInputSchema {
+    interface QueryParams extends RequestInputSchema {
       readonly message: string;
     }
 
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       queryParameters: [
-        new ApiXUrlQueryParameter('message', mockValidator, mockProcessor, true)
+        new UrlQueryParameter('message', mockValidator, mockProcessor, true)
       ],
-      requestHandler: (request: ApiXRequest<QueryParams>) => {
+      requestHandler: (request: Request<QueryParams>) => {
         const data = { success: true, message: request.queryParameters?.message };
         return { data }
       }
@@ -606,11 +606,11 @@ describe('ApiXManager', () => {
 
     let response = await request(app)
       .get('/entity/method?message=This%20passed')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'cb78ce350cd07ad6d8cf0738c83b66139bd9ac3db742e8185ecadc4c4deddb81')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, 'cb78ce350cd07ad6d8cf0738c83b66139bd9ac3db742e8185ecadc4c4deddb81')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -621,11 +621,11 @@ describe('ApiXManager', () => {
     /// Exact same request is duplicated
     response = await request(app)
       .get('/entity/method?message=This%20passed')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'cb78ce350cd07ad6d8cf0738c83b66139bd9ac3db742e8185ecadc4c4deddb81')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, 'cb78ce350cd07ad6d8cf0738c83b66139bd9ac3db742e8185ecadc4c4deddb81')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({
@@ -639,7 +639,7 @@ describe('ApiXManager', () => {
   });
 
   it('should reject requests with missing http body when required', async () => {
-    interface RequestBody extends ApiXRequestInputSchema {
+    interface RequestBody extends RequestInputSchema {
       readonly postId: string;
       readonly content: string;
     }
@@ -648,7 +648,7 @@ describe('ApiXManager', () => {
       entity: 'posts',
       method: 'edit',
       httpMethod: 'POST',
-      characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
+      characteristics: new Set([MethodCharacteristic.PrivateOwnedData]),
       requestHandler: (request) => {
         const body = request.jsonBody!;
         const data = { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
@@ -656,20 +656,20 @@ describe('ApiXManager', () => {
       },
       jsonBodyRequired: true,
       requestorOwnsResource: () => true
-    } as ApiXMethod<object, RequestBody>);
+    } as EndpointMethod<object, RequestBody>);
 
-    mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
+    mockEvaluator.evaluate = jest.fn().mockReturnValue(AccessLevel.ResourceOwner);
 
     /// Effectively disable request age
     mockConfig.setValueForKey(Infinity, ApiXConfigKey.MaxRequestAge);
 
     const response = await request(app)
       .post('/posts/edit')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, '2c36f48aec7e8d6bb011bed974867e1ea84b013026b7396d7f0b45ea3fbdd67f')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, '2c36f48aec7e8d6bb011bed974867e1ea84b013026b7396d7f0b45ea3fbdd67f')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -683,12 +683,12 @@ describe('ApiXManager', () => {
   });
 
   it('should fulfill request with missing non-required body with a validator', async () => {
-    interface RequestBody extends ApiXRequestInputSchema {
+    interface RequestBody extends RequestInputSchema {
       readonly postId: string;
       readonly content: string;
     }
 
-    const mockBodyValidator: jest.Mocked<ApiXHttpBodyValidator<RequestBody>> = {
+    const mockBodyValidator: jest.Mocked<HttpBodyValidator<RequestBody>> = {
       isValid: jest.fn().mockReturnValue(false)
     };
 
@@ -696,7 +696,7 @@ describe('ApiXManager', () => {
       entity: 'posts',
       method: 'edit',
       httpMethod: 'POST',
-      characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
+      characteristics: new Set([MethodCharacteristic.PrivateOwnedData]),
       requestHandler: (request) => {
         const body = request.jsonBody;
         if (body) {
@@ -715,18 +715,18 @@ describe('ApiXManager', () => {
       requestorOwnsResource: () => true
     });
 
-    mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
+    mockEvaluator.evaluate = jest.fn().mockReturnValue(AccessLevel.ResourceOwner);
 
     /// Effectively disable request age
     mockConfig.setValueForKey(Infinity, ApiXConfigKey.MaxRequestAge);
 
     const response = await request(app)
       .post('/posts/edit')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, '2c36f48aec7e8d6bb011bed974867e1ea84b013026b7396d7f0b45ea3fbdd67f')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, '2c36f48aec7e8d6bb011bed974867e1ea84b013026b7396d7f0b45ea3fbdd67f')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -736,12 +736,12 @@ describe('ApiXManager', () => {
   });
 
   it('should reject requests with with invalid json bodies', async () => {
-    interface RequestBody extends ApiXRequestInputSchema {
+    interface RequestBody extends RequestInputSchema {
       readonly postId: string;
       readonly content: string;
     }
 
-    const mockBodyValidator: jest.Mocked<ApiXHttpBodyValidator<RequestBody>> = {
+    const mockBodyValidator: jest.Mocked<HttpBodyValidator<RequestBody>> = {
       isValid: jest.fn().mockReturnValue(false)
     };
 
@@ -749,7 +749,7 @@ describe('ApiXManager', () => {
       entity: 'posts',
       method: 'edit',
       httpMethod: 'POST',
-      characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
+      characteristics: new Set([MethodCharacteristic.PrivateOwnedData]),
       requestHandler: (request) => {
         const body = request.jsonBody!;
         const data = { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
@@ -760,7 +760,7 @@ describe('ApiXManager', () => {
       requestorOwnsResource: () => true
     });
 
-    mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
+    mockEvaluator.evaluate = jest.fn().mockReturnValue(AccessLevel.ResourceOwner);
 
     /// Effectively disable request age
     mockConfig.setValueForKey(Infinity, ApiXConfigKey.MaxRequestAge);
@@ -771,11 +771,11 @@ describe('ApiXManager', () => {
         postId: '1010',
         content: 'New content!'
       })
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, '49194126176d3c94d615e0ab9bf40478cc60ec8dbc1492efab4d2054ac4ef2a1')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, '49194126176d3c94d615e0ab9bf40478cc60ec8dbc1492efab4d2054ac4ef2a1')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
@@ -793,7 +793,7 @@ describe('ApiXManager', () => {
       entity: 'posts',
       method: 'edit',
       httpMethod: 'POST',
-      characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
+      characteristics: new Set([MethodCharacteristic.PrivateOwnedData]),
       requestHandler: (request) => {
         const body = request.body;
         const data = { success: true, message: `Modifying post with ID: ${body.postId} to content: ${body.content}` };
@@ -802,7 +802,7 @@ describe('ApiXManager', () => {
       requestorOwnsResource: () => true
     });
 
-    mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
+    mockEvaluator.evaluate = jest.fn().mockReturnValue(AccessLevel.ResourceOwner);
 
     /// Effectively disable request age
     mockConfig.setValueForKey(Infinity, ApiXConfigKey.MaxRequestAge);
@@ -813,11 +813,11 @@ describe('ApiXManager', () => {
         postId: '1010',
         content: 'New post content!'
       })
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, '878e1b3c6712413dc519f6a299644a6fe351d8003fd1ce692344a4c2226c3835')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, '878e1b3c6712413dc519f6a299644a6fe351d8003fd1ce692344a4c2226c3835')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -831,7 +831,7 @@ describe('ApiXManager', () => {
       entity: 'posts',
       method: 'new',
       httpMethod: 'PUT',
-      characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
+      characteristics: new Set([MethodCharacteristic.PrivateOwnedData]),
       requestHandler: (request) => {
         const body = request.body;
         const data = {
@@ -847,7 +847,7 @@ describe('ApiXManager', () => {
       requestorOwnsResource: () => true
     });
 
-    mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
+    mockEvaluator.evaluate = jest.fn().mockReturnValue(AccessLevel.ResourceOwner);
 
     /// Effectively disable request age
     mockConfig.setValueForKey(Infinity, ApiXConfigKey.MaxRequestAge);
@@ -858,11 +858,11 @@ describe('ApiXManager', () => {
         userId: '1010',
         content: 'New post content!'
       })
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, '4aec2a4ebace530a486d223ef8bdaefb419e27ae7149288397881fb7364f49ad')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, '4aec2a4ebace530a486d223ef8bdaefb419e27ae7149288397881fb7364f49ad')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -880,7 +880,7 @@ describe('ApiXManager', () => {
       entity: 'posts',
       method: 'delete',
       httpMethod: 'DELETE',
-      characteristics: new Set([ApiXMethodCharacteristic.PrivateOwnedData]),
+      characteristics: new Set([MethodCharacteristic.PrivateOwnedData]),
       requestHandler: (request) => {
         const body = request.body;
         const data = {
@@ -892,7 +892,7 @@ describe('ApiXManager', () => {
       requestorOwnsResource: () => true
     });
 
-    mockEvaluator.evaluate = jest.fn().mockReturnValue(ApiXAccessLevel.ResourceOwner);
+    mockEvaluator.evaluate = jest.fn().mockReturnValue(AccessLevel.ResourceOwner);
 
     /// Effectively disable request age
     mockConfig.setValueForKey(Infinity, ApiXConfigKey.MaxRequestAge);
@@ -902,11 +902,11 @@ describe('ApiXManager', () => {
       .send({
         postId: '1010',
       })
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'de4f64f039dcac6476c77e9f3a1ada7ff122b0c0742f208aa7bbb1373bd7150a')
-      .set(ApiXHttpHeaders.SignatureNonce, '0123456')
-      .set(ApiXHttpHeaders.ForwardedProto, 'https');
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date('2024-11-10T12:00:00Z').toUTCString())
+      .set(HttpHeaders.Signature, 'de4f64f039dcac6476c77e9f3a1ada7ff122b0c0742f208aa7bbb1373bd7150a')
+      .set(HttpHeaders.SignatureNonce, '0123456')
+      .set(HttpHeaders.ForwardedProto, 'https');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -919,7 +919,7 @@ describe('ApiXManager', () => {
     appManager.registerAppMethod({
       entity: 'entity',
       method: 'method',
-      characteristics: new Set([ApiXMethodCharacteristic.PublicUnownedData]),
+      characteristics: new Set([MethodCharacteristic.PublicUnownedData]),
       requestHandler: (request) => {
         const data = { success: true, message: request.query.message };
         return { data };
@@ -930,11 +930,11 @@ describe('ApiXManager', () => {
 
     const response = await request(app)
       .get('/entity/method?message=This%20passed')
-      .set(ApiXHttpHeaders.ApiKey, 'some-key')
-      .set(ApiXHttpHeaders.Date, new Date().toUTCString())
-      .set(ApiXHttpHeaders.Signature, 'invalidSig')
-      .set(ApiXHttpHeaders.SignatureNonce, 'nonce')
-      .set(ApiXHttpHeaders.ForwardedProto, 'http'); /// non-secured
+      .set(HttpHeaders.ApiKey, 'some-key')
+      .set(HttpHeaders.Date, new Date().toUTCString())
+      .set(HttpHeaders.Signature, 'invalidSig')
+      .set(HttpHeaders.SignatureNonce, 'nonce')
+      .set(HttpHeaders.ForwardedProto, 'http'); /// non-secured
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({

@@ -8,58 +8,253 @@
 /**
  * API Methods
  */
-export { ApiXHttpBodyValidator } from './apixlib/common/methods/ApiXHttpBodyValidator';
-export { ApiXMethod, ApiXRequestHandler } from './apixlib/common/methods/ApiXMethod';
-export { ApiXMethodCharacteristic } from './apixlib/common/methods/ApiXMethodCharacteristic';
-export { ApiXRequestInputSchema } from './apixlib/common/methods/ApiXRequestInputSchema';
-export { ApiXUrlQueryParameter } from './apixlib/common/methods/ApiXUrlQueryParameter';
+import { 
+  BaseEndpointGenerator,
+  EndpointGenerator,
+  InternalResource,
+  ModerativeResource,
+  InstitutionalResource,
+  ExclusiveResource,
+  PrivateResource,
+  PublicResource,
+  AuthRequired,
+  OwnerEvaluator,
+  Route,
+  HttpBody,
+  QueryParameters
+} from './apixlib/common/methods/Decorators';
+import { HttpBodyValidator } from './apixlib/common/methods/HttpBodyValidator';
+import { EndpointMethod, HttpMethod, RequestHandler } from './apixlib/common/methods/EndpointMethod';
+import { MethodCharacteristic } from './apixlib/common/methods/MethodCharacteristic';
+import { RequestInputSchema } from './apixlib/common/methods/RequestInputSchema';
+import {
+  UrlQueryParameter,
+  MissingRequiredParameterError,
+  InvalidParameterError
+} from './apixlib/common/methods/UrlQueryParameter';
+import {
+  UrlQueryParameterProcessor,
+  UrlQueryParameterPassthroughProcessor
+} from './apixlib/common/methods/UrlQueryParameterProcessor';
+import { UrlQueryParameterValidator } from './apixlib/common/methods/UrlQueryParameterValidator';
+import { Request } from './apixlib/common/Request';
+import { Response } from './apixlib/common/Response';
+
 export {
-  ApiXUrlQueryParameterProcessor,
-  ApiXUrlQueryParameterPassthroughProcessor
-} from './apixlib/common/methods/ApiXUrlQueryParameterProcessor';
-export { ApiXUrlQueryParameterValidator } from './apixlib/common/methods/ApiXUrlQueryParameterValidator';
-export { ApiXRequest } from './apixlib/common/ApiXRequest';
-export { ApiXResponse } from './apixlib/common/ApiXResponse';
+  BaseEndpointGenerator,
+  EndpointGenerator,
+  InternalResource,
+  ModerativeResource,
+  InstitutionalResource,
+  ExclusiveResource,
+  PrivateResource,
+  PublicResource,
+  AuthRequired,
+  OwnerEvaluator,
+  Route,
+  HttpBody,
+  QueryParameters,
+
+  HttpBodyValidator,
+  /**
+   * @deprecated use HttpBodyValidator instead.
+   */
+  HttpBodyValidator as ApiXHttpBodyValidator,
+
+  EndpointMethod,
+  /**
+   * @deprecated use EndpointMethod instead.
+   */
+  EndpointMethod as ApiXMethod,
+
+  HttpMethod,
+
+  RequestHandler,
+  /**
+   * @deprecated use RequestHandler instead.
+   */
+  RequestHandler as ApiXRequestHandler,
+
+  MethodCharacteristic,
+  /**
+   * @deprecated use MethodCharacteristic instead.
+   */
+  MethodCharacteristic as ApiXMethodCharacteristic,
+
+  RequestInputSchema,
+  /**
+   * @deprecated use RequestInputSchema instead.
+   */
+  RequestInputSchema as ApiXRequestInputSchema,
+
+  UrlQueryParameter,
+  /**
+   * @deprecated use UrlQueryParameter instead.
+   */
+  UrlQueryParameter as ApiXUrlQueryParameter,
+
+  MissingRequiredParameterError,
+  InvalidParameterError,
+
+  UrlQueryParameterProcessor,
+  /**
+   * @deprecated use UrlQueryParameterProcessor instead.
+   */
+  UrlQueryParameterProcessor as ApiXUrlQueryParameterProcessor,
+
+  UrlQueryParameterPassthroughProcessor,
+  /**
+   * @deprecated use UrlQueryParameterPassthroughProcessor instead.
+   */
+  UrlQueryParameterPassthroughProcessor as ApiXUrlQueryParameterPassthroughProcessor,
+
+  UrlQueryParameterValidator,
+  /**
+   * @deprecated use UrlQueryParameterValidator instead.
+   */
+  UrlQueryParameterValidator as ApiXUrlQueryParameterValidator,
+
+  Request,
+  /**
+   * @deprecated use Request instead.
+   */
+  Request as ApiXRequest,
+
+  Response,
+  /**
+   * @deprecated use Response instead.
+   */
+  Response as ApiXResponse
+}
 
 /**
  * Access Control
  */
-export { ApiXAccessLevel } from './apixlib/common/ApiXAccessLevel';
-export { ApiXAccessLevelEvaluator } from './apixlib/common/ApiXAccessLevelEvaluator';
+import { AccessLevel } from './apixlib/common/AccessLevel';
+import { AccessLevelEvaluator } from './apixlib/common/AccessLevelEvaluator';
+
+export {
+  AccessLevel,
+  /**
+   * @deprecated use AccessLevel instead.
+   */
+  AccessLevel as ApiXAccessLevel,
+
+  AccessLevelEvaluator,
+  /**
+   * @deprecated use AccessLevelEvaluator instead.
+   */
+  AccessLevelEvaluator as ApiXAccessLevelEvaluator
+};
 
 /**
  * Data Management & Cache
  */
-export { ApiXDataManager } from './apixlib/ApiXDataManager';
-export { ApiXCache, ApiXCacheValue } from './apixlib/common/ApiXCache';
-export { ApiXRedisStore } from './apixlib/common/ApiXRedisStore';
+import { DataManager } from './apixlib/DataManager';
+import { Cache, CacheValue } from './apixlib/common/Cache';
+import { RedisStore } from './apixlib/common/RedisStore';
+
+export {
+  DataManager,
+
+  /**
+   * @deprecated use DataManager instead.
+   */
+  DataManager as ApiXDataManager,
+
+  Cache,
+  /**
+   * @deprecated use Cache instead.
+   */
+  Cache as ApiXCache,
+
+  CacheValue,
+  /**
+   * @deprecated use CacheValue instead.
+   */
+  CacheValue as ApiXCacheValue,
+
+  RedisStore,
+  /**
+   * @deprecated use RedisStore instead.
+   */
+  RedisStore as ApiXRedisStore
+};
 
 /**
  * Utility Types
  */
-export { ApiXJsonDictionary } from './apixlib/common/ApiXJsonDictionary';
-export { ApiXHttpHeaders } from './apixlib/common/ApiXHttpHeaders';
+import { JsonDictionary } from './apixlib/common/JsonDictionary';
+import { HttpHeaders } from './apixlib/common/HttpHeaders';
+
+export {
+  JsonDictionary,
+
+  /**
+   * @deprecated use JsonDictionary instead.
+   */
+  JsonDictionary as ApiXJsonDictionary,
+
+  HttpHeaders,
+
+  /**
+   * @deprecated use HttpHeaders instead.
+   */
+  HttpHeaders as ApiXHttpHeaders
+};
 
 /**
  * Configuration & Management
  */
-export { ApiXConfig } from './apixlib/ApiXConfig';
-export { ApiXManager } from './apixlib/ApiXManager';
+import { ApiXConfig } from './apixlib/ApiXConfig';
+import { AppManager } from './apixlib/AppManager';
+
+export {
+  ApiXConfig,
+  
+  AppManager,
+  /**
+   * @deprecated use AppManager instead.
+   */
+  AppManager as ApiXManager
+};
 
 /**
  * Logging & Metrics
  */
-export { Logger } from './apixlib/common/Logger';
-export {
+import {
   MetricManager,
   MetricManagerOptions,
   MetricTags
 } from './apixlib/common/MetricManager'
+import { Logger } from './apixlib/common/Logger';
 
-import { makeApiXErrorResponse } from './apixlib/common/utils/makeApiXErrorResponse';
+export {
+  Logger,
+  MetricManager,
+  MetricManagerOptions,
+  MetricTags
+};
 
+import { makeErrorResponse } from './apixlib/common/utils/makeErrorResponse';
+
+export {
+  makeErrorResponse,
+
+  /**
+   * @deprecated use makeErrorResponse instead.
+   */
+  makeErrorResponse as makeApiXErrorResponse
+};
+
+/**
+ * Utility functions.
+ */
 const utils = {
-  makeApiXErrorResponse,
+
+  /** @deprecated use makeErrorResponse instead. */
+  makeApiXErrorResponse: makeErrorResponse,
+  makeErrorResponse,
 };
 
 export {

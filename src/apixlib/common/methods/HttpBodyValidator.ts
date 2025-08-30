@@ -1,4 +1,4 @@
-import { ApiXRequestInputSchema } from './ApiXRequestInputSchema';
+import { RequestInputSchema } from './RequestInputSchema';
 
 /**
  * An interface used to implement a validator for a JSON body that is
@@ -8,13 +8,13 @@ import { ApiXRequestInputSchema } from './ApiXRequestInputSchema';
  * 
  * @example
  * ```ts
- * interface UserLoginJsonSchema extends ApiXRequestInputSchema {
+ * interface UserLoginJsonSchema extends RequestInputSchema {
  *   readonly username: string;
  *   readonly password: string;
  * }
  * 
  * // a simple object to validate the username and password of a login endpoint.
- * class UserLoginHttpBodyValidator implements ApiXHttpBodyValidator<UserLoginJsonSchema> {
+ * class UserLoginHttpBodyValidator implements HttpBodyValidator<UserLoginJsonSchema> {
  * 
  *   isValid(body: UserLoginJsonSchema): boolean {
  *     const usernameRegex = /^[a-zA-Z0-9]{5,12}$/;
@@ -29,9 +29,9 @@ import { ApiXRequestInputSchema } from './ApiXRequestInputSchema';
  * }
  * ```
  * 
- * @see {@link ApiXMethod#jsonBodyValidator}
+ * @see {@link EndpointMethod#jsonBodyValidator}
  */
-export interface ApiXHttpBodyValidator<T extends ApiXRequestInputSchema> {
+export interface HttpBodyValidator<T extends RequestInputSchema> {
 
   /**
    * Determines if the HTTP body is valid.

@@ -11,7 +11,7 @@
  * @category Resource Access Permissions
  * @enum
  */
-export enum ApiXAccessLevel {
+export enum AccessLevel {
   /**
    * Highest level of access. This should only be used for internal
    * or extremely private resources. This level of access should be

@@ -1,31 +1,44 @@
-import { ApiXHttpBodyValidator } from './ApiXHttpBodyValidator';
-import { ApiXMethodCharacteristic } from './ApiXMethodCharacteristic';
-import { ApiXRequest } from '../ApiXRequest';
-import { ApiXRequestInputSchema } from './ApiXRequestInputSchema';
-import { ApiXResponse } from '../ApiXResponse';
-import { ApiXUrlQueryParameter } from './ApiXUrlQueryParameter';
-import { Response } from 'express';
+import { Response as ExpressResponse } from 'express';
+import { HttpBodyValidator } from './HttpBodyValidator';
+import { MethodCharacteristic } from './MethodCharacteristic';
+import { Request } from '../Request';
+import { RequestInputSchema } from './RequestInputSchema';
+import { Response } from '../Response';
+import { UrlQueryParameter } from './UrlQueryParameter';
 
 /**
  * A request handler function type.
  * 
  * @category Working with HTTP Endpoints
  * 
- * @see {@link ApiXMethod#requestHandler}
+ * @see {@link EndpointMethod#requestHandler}
  */
-export type ApiXRequestHandler<
-  QuerySchema extends ApiXRequestInputSchema,
-  BodySchema extends ApiXRequestInputSchema
+export type RequestHandler<
+  QuerySchema extends RequestInputSchema,
+  BodySchema extends RequestInputSchema
 > = (
-  req: ApiXRequest<QuerySchema, BodySchema>,
-  res: Response
-) => ApiXResponse | Promise<ApiXResponse>;
+  req: Request<QuerySchema, BodySchema>,
+  res: ExpressResponse
+) => Response | Promise<Response>;
 
 /**
- * Interface for an ApiXMethod.
+ * HTTP methods supported by the API.
  * 
- * Represents an endpoint in you an API-X-based RESTful API. Your
- * endpoint is reaches at `/{entity}/{method}`. If an entity is not
+ * @category Working with HTTP Endpoints
+ * 
+ * @see {@link EndpointMethod#httpMethod}
+ */
+export type HttpMethod = 
+  | 'GET'
+  | 'POST'
+  | 'PUT'
+  | 'DELETE'
+  | 'PATCH'
+  | 'ALL';
+
+/**
+ * An interface that represents an endpoint in your API-X-based RESTful API. Your
+ * endpoint is reached at `/{entity}/{method}`. If an entity is not
  * defined, then it will be `/{method}`.
  * 
  * @category Working with HTTP Endpoints
@@ -33,9 +46,9 @@ export type ApiXRequestHandler<
  * 
  * @see {@link ApiXManager#registerAppMethod}
  */
-export interface ApiXMethod<
-  QuerySchema extends ApiXRequestInputSchema = Record<string, never>,
-  BodySchema extends ApiXRequestInputSchema = Record<string, never>
+export interface EndpointMethod<
+  QuerySchema extends RequestInputSchema = Record<string, never>,
+  BodySchema extends RequestInputSchema = Record<string, never>
 > {
   /**
    * An optional entity for your endpoint.
@@ -47,9 +60,9 @@ export interface ApiXMethod<
    * user-based methods can be under the `user` entity, and your
    * `method` can define the kind of operation to perform on the
    * `user` entity:
-   * - `/user/new/` - defines an operation that creates a new user.
-   * - `/user/delete/` - defines an operation to delete a new user.
-   * - `/user/:id` - defines an operation to get data on an arbitrary
+   * - `/users/new/` - defines an operation that creates a new user.
+   * - `/users/delete/` - defines an operation to delete a new user.
+   * - `/users/:id` - defines an operation to get data on an arbitrary
    * user.
    * 
    * It is _recommended_ that an entity is used for all methods.
@@ -66,9 +79,9 @@ export interface ApiXMethod<
    * 
    * Assuming an entity of `user`, new methods can be created to
    * define operations that can be made on users:
-   * - `/user/new/` - defines an operation that creates a new user (method = new).
-   * - `/user/delete/` - defines an operation to delete a new user (method = delete).
-   * - `/user/:id` - defines an operation to get data on an arbitrary user (method = :id).
+   * - `/users/new/` - defines an operation that creates a new user (method = new).
+   * - `/users/delete/` - defines an operation to delete a new user (method = delete).
+   * - `/users/:id` - defines an operation to get data on an arbitrary user (method = :id).
    * 
    * As seen in the example above, a method can have a template for a parameter,
    * such as `":id"`.
@@ -86,14 +99,14 @@ export interface ApiXMethod<
    * 
    * @category Handling Requests
    */
-  readonly requestHandler: ApiXRequestHandler<QuerySchema, BodySchema>;
+  readonly requestHandler: RequestHandler<QuerySchema, BodySchema>;
 
   /**
-   * The HTTP method of your endpoint.
+   * The HTTP method of your endpoint. If not provided, defaults to 'GET'.
    * 
    * @category Setting HTTP Method
    */
-  readonly httpMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'ALL';
+  readonly httpMethod?: HttpMethod;
 
   /**
    * A list of defined query parameters for the method.
@@ -106,7 +119,7 @@ export interface ApiXMethod<
    * 
    * @category Handling Query Parameters
    */
-  readonly queryParameters?: ReadonlyArray<ApiXUrlQueryParameter<unknown>>;
+  readonly queryParameters?: ReadonlyArray<UrlQueryParameter<unknown>>;
 
   /**
    * An object that validates the JSON body of the request. If present and there's
@@ -117,7 +130,7 @@ export interface ApiXMethod<
    * 
    * @category Handling Request JSON Body
    */
-  readonly jsonBodyValidator?: ApiXHttpBodyValidator<BodySchema>;
+  readonly jsonBodyValidator?: HttpBodyValidator<BodySchema>;
 
   /**
    * A boolean value that determines whether the request must include an HTTP
@@ -136,7 +149,7 @@ export interface ApiXMethod<
    * 
    * @category Managing Access Control
    */
-  readonly characteristics: ReadonlySet<ApiXMethodCharacteristic>;
+  readonly characteristics: ReadonlySet<MethodCharacteristic>;
 
   /**
    * A function that determines whether the requestor (`request`) owns
@@ -147,8 +160,8 @@ export interface ApiXMethod<
    * the _resource_.
    * 
    * This _must_ be implemented for endpoints that provide owned resources, i.e.,
-   * have the `ApiXMethodCharacteristic.PublicOwnedData`
-   * or `ApiXMethodCharacteristic.PrivateOwnedData`, otherwise it'll throw an error
+   * have the `MethodCharacteristic.PublicOwnedData`
+   * or `MethodCharacteristic.PrivateOwnedData`, otherwise it'll throw an error
    * when attempting to register method.
    * 
    * @param request The request object that contains the identity
@@ -172,5 +185,5 @@ export interface ApiXMethod<
    * 
    * @category Managing Access Control
    */
-  readonly requestorOwnsResource?: (request: ApiXRequest<QuerySchema, BodySchema>) => boolean | Promise<boolean>;
+  readonly requestorOwnsResource?: (request: Request<QuerySchema, BodySchema>) => boolean | Promise<boolean>;
 }

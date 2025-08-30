@@ -5,7 +5,7 @@
  * @example
  * ```ts
  * // validates a search keywords parameter.
- * class KeywordsUrlQueryParameterValidator implements ApiXUrlQueryParameterValidator {
+ * class KeywordsUrlQueryParameterValidator implements UrlQueryParameterValidator {
  *   isValid(name: string, value: string): boolean {
  *     // keyword are only alphanumeric with limited punctuation. Example only.
  *     const regex = /^[a-zA-Z0-9.,'" ]+$/;
@@ -16,7 +16,7 @@
  * 
  * @category Working with HTTP Endpoints
  */
-export interface ApiXUrlQueryParameterValidator {
+export interface UrlQueryParameterValidator {
   /**
    * Determines whether the value for the parameter is valid.
    * @param name The name of the parameter to validate.

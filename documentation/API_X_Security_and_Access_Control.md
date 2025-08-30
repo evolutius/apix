@@ -19,7 +19,7 @@ API-X enforces SSL/TLS for all endpoints. Requests that do not come from an encr
 
 You must enable SSL/TLS on your server, as API-X only accepts encrypted requests. While API-X provides a developer mode to disable these checks for local development, it is **critical** to disable developer mode in production environments for security.
 
-> For more information on Developer Mode, see [ApiXManager#developerModeEnabled](/classes/apix.ApiXManager.html#developerModeEnabled).
+> For more information on Developer Mode, see [AppManager#developerModeEnabled](/classes/apix.AppManager.html#developerModeEnabled).
 
 ## Request Integrity Verification
 
@@ -37,9 +37,9 @@ API-X uses a data manager to verify the application by asking a simple question:
 
 > Who is this API Key?
 
-Typically, this translates to a simple database lookup. You implement this using a concrete [ApiXDataManager](/classes/apix.ApiXDataManager.html) class that handles this verification.
+Typically, this translates to a simple database lookup. You implement this using a concrete [DataManager](/classes/apix.DataManager.html) class that handles this verification.
 
-> For more details, see [ApiXManager](/classes/apix.ApiXManager.html) and [ApiXDataManager#getAppKeyForApiKey](/classes/apix.ApiXDataManager.html#getAppKeyForApiKey).
+> For more details, see [AppManager](/classes/apix.AppManager.html) and [DataManager#getAppKeyForApiKey](/classes/apix.DataManager.html#getAppKeyForApiKey).
 
 > For information on securely storing API Keys on clients, see [*Securely Store Keys on iOS, Android, and Web Applications*](./Securely_Store_Keys_on_iOS_Android_and_Web_Applications.md).
 
