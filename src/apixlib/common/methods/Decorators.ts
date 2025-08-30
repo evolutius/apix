@@ -20,7 +20,7 @@ type AnyHandler = (req: AnyRequest, res: ExpressResponse) => Response | Promise<
 interface MethodMeta {
   name: string | symbol;
   // Route
-  route?: { methodName: string; httpMethod: HttpMethod };
+  route?: { methodName: string; httpMethod: HttpMethod; priority: number; };
   // Access control flags
   hasPrivateResource?: boolean;
   hasPublicResource?: boolean;
@@ -110,10 +110,11 @@ export function OwnerEvaluator() {
 /**
  * Declares the route for a handler method.
  *
- * @param methodName The method segment (e.g., ":id", "new", etc.).
+ * @param methodName The method segment (e.g., ":id", "new", etc.). If not provided, defaults to an empty method. If it's empty, an entity must be provided in the `@EndpointGenerator`.
  * @param httpMethod The HTTP verb (default "GET").
+ * @param priority The route priority (default `Infinity`). Lower values indicate higher priority. Use this when you add multiple routes that could match the same path but you want one to have priority. E.g., `/users/search` and `/users/:id`, here, `/users/search` should have a higher priority because `/users/:id` is more generic and would match it otherwise.
  */
-export function Route(methodName: string, httpMethod: HttpMethod = 'GET') {
+export function Route(methodName: string = "", httpMethod: HttpMethod = 'GET', priority: number = Infinity) {
   return function (_value: Function, context: ClassMethodDecoratorContext) {
     assert(context.kind === 'method', '@Route can only be applied to methods.');
     assert(TypeUtil.isString(methodName), '@Route(methodName) requires a string.');
@@ -121,7 +122,7 @@ export function Route(methodName: string, httpMethod: HttpMethod = 'GET') {
     context.addInitializer(function () {
       const methodMetadata = ensureMethodMeta((this as any).constructor, context.name);
       assert(!methodMetadata.route, `Duplicate @Route on method ${String(context.name)}.`);
-      methodMetadata.route = { methodName, httpMethod };
+      methodMetadata.route = { methodName, httpMethod, priority };
     });
   };
 }
@@ -301,7 +302,7 @@ function buildEndpointsForInstance(
   const classMetadata = ensureClassMeta(ctor);
   const entityValue = resolveEntity(ctor, classMetadata.entityParam);
 
-  const endpoints: EndpointMethod<any, any>[] = [];
+  const items: Array<{ endpoint: EndpointMethod<any, any>; priority: number }> = [];
 
   for (const [, methodMetadata] of classMetadata.methods) {
     // Skip plain methods (no @Route)
@@ -369,7 +370,6 @@ function buildEndpointsForInstance(
       ...(ownerEval ? { requestorOwnsResource: ownerEval } : {})
     };
 
-    // Optional: sanity guard — GET endpoints should not *require* body.
     if (endpoint.httpMethod === 'GET' && endpoint.jsonBodyRequired) {
       throw new Error(
         `[API-X Decorators] GET route "${endpoint.method}" cannot require a JSON body.`
@@ -378,14 +378,24 @@ function buildEndpointsForInstance(
 
     // Freeze the endpoint object to discourage accidental mutation after registration
     Object.freeze(endpoint);
-    endpoints.push(endpoint);
+    items.push({ endpoint, priority: methodMetadata.route.priority ?? Infinity });
   }
 
-  // Stable order: by method string then http verb for determinism
-  endpoints.sort((a, b) => {
-    if (a.method === b.method) return (a.httpMethod || 'GET').localeCompare(b.httpMethod || 'GET');
-    return a.method.localeCompare(b.method);
+  // Stable order: by route priority (ascending), then method string, then http verb for determinism
+  items.sort((a, b) => {
+    const prDiff = a.priority - b.priority;
+    if (prDiff !== 0) {
+      return prDiff;
+    }
+    const am = a.endpoint.method;
+    const bm = b.endpoint.method;
+    if (am === bm) {
+      return (a.endpoint.httpMethod || 'GET').localeCompare(b.endpoint.httpMethod || 'GET');
+    }
+    return am.localeCompare(bm);
   });
+
+  const endpoints: EndpointMethod<any, any>[] = items.map(i => i.endpoint);
 
   return endpoints as ReadonlyArray<EndpointMethod<any, any>>;
 }
